@@ -1,23 +1,10 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const assert = std.debug.assert;
-/// Creates a Sparse Set with convenience functionality for a single AOS (Array of Structures)
-/// See https://research.swtch.com/sparse
-/// Useful for example in an Entity Component System that can handle many entities (sparse index),
-/// but only a few of those will have a number of components (dense index), and you want to be able
-/// to loop over the components using a regular linear for loop.
-/// In short:
-/// * O(1) Lookup from sparse to dense, and vice versa
-/// * O(1) Has, Add and Remove.
-/// * O(1) Clear (remove all elements)
-/// * O(d) iteration (dense list).
-/// * Dense list is unsorted if you remove elements.
-/// * Unused elements of sparse and dense lists are undefined.
-/// * Supports SoA-style component layout.
-/// * Set errored to true for error checking, to false for speed.
 
-// /// Like SparseSet, but with the handy addition of storing a ValueT array internally, saving
-// /// the user some bookkeeping.
+/// Creates a Sparse Set with convenience functionality for AOS-style data.
+/// See https://github.com/Srekel/zig-sparse-set for latest version and documentation
+/// Also see the unit tests for usage examples.
 pub fn SparseSetAOS(comptime SparseT: type, comptime DenseT: type, comptime ValueT: type) type {
     return struct {
         const Self = @This();
