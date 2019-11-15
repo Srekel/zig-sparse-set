@@ -168,5 +168,14 @@ So, all in all there are of course benefits and drawbacks to sparse sets. You'll
 
 ## :page_with_curl: License :page_with_curl:
 
-Pick your license: Public Domaim (Unlicense) or MIT.
+Pick your license: Public Domain (Unlicense) or MIT.
 
+## :statue_of_liberty: Examples :statue_of_liberty:
+
+See `src/test.zig`.
+
+## :paperclip: References :paperclip:
+
+* [incrediblejr's](https://gist.github.com/incrediblejr) C [implementation](https://gist.github.com/incrediblejr/931efb7587e1ab328fa65ecc94d1009f).
+* The original (?) [article](https://research.swtch.com/sparse) describing sparse sets.
+* The [Zig](https://ziglang.org/) language.
