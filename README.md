@@ -35,7 +35,9 @@ for (self.components) |some_component| {
 }
 ```
 
-...because you'll be doing a lot of looping over data that isn't of interest. So probably cache misses - or worse - here too. Also, you need to store a bool for every component (in some way - not necessarily in the component).
+...because you'll be doing a lot of looping over data that isn't of interest. Also, you need to store a flag for every component. So potentially cache misses for the `+=` operation here too.
+
+(Note that the flag could be implemented as a bitset lookup, for example, which would probably be better, but still have the same underlying problem).
 
 :heart_eyes: With a sparse set, you can always simply loop over the data linearly: :heart_eyes:
 
