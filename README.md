@@ -4,7 +4,7 @@ An implementation of Sparse Sets for Zig.
 
 ## :confused: What is a Sparse Set? :confused:
 
-A Sparse Set is a fairly simple data structure with some properties that make it especially useful for some aspects in game development, but you know... probably interesting for other areas too.
+A Sparse Set is a fairly simple data structure with some properties that make it especially useful for some aspects in game development, but you know... it's probably interesting for other areas too.
 
 Here's a good introduction: https://research.swtch.com/sparse
 
