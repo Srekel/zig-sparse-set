@@ -5,7 +5,7 @@ const sparse_set = @import("sparse_set");
 const sparse_set_aos = @import("sparse_set_aos");
 
 test "init safe" {
-    var ss = sparse_set.SparseSet(u32, u8).init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = sparse_set.SparseSet(u32, u8, false).init(std.debug.global_allocator, 128, 8) catch unreachable;
     for (ss.sparse_to_dense) |dense_undefined, sparse| {
         var usparse = @intCast(u32, sparse);
         testing.expect(!(ss.hasSparse(usparse)));
@@ -14,7 +14,7 @@ test "init safe" {
 }
 
 test "add / remove safe 1" {
-    var ss = sparse_set.SparseSet(u32, u8).init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = sparse_set.SparseSet(u32, u8, false).init(std.debug.global_allocator, 128, 8) catch unreachable;
     defer (ss.deinit());
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
@@ -33,7 +33,7 @@ test "add / remove safe 1" {
 }
 
 test "add / remove safe 2" {
-    var ss = sparse_set.SparseSet(u32, u8).init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = sparse_set.SparseSet(u32, u8, false).init(std.debug.global_allocator, 128, 8) catch unreachable;
     defer (ss.deinit());
 
     testing.expect(!(ss.hasSparse(1)));
@@ -45,7 +45,7 @@ test "add / remove safe 2" {
 }
 
 test "add / remove safe 3" {
-    var ss = sparse_set.SparseSet(u32, u8).init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = sparse_set.SparseSet(u32, u8, false).init(std.debug.global_allocator, 128, 8) catch unreachable;
     defer (ss.deinit());
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
@@ -65,7 +65,7 @@ test "add / remove safe 3" {
 }
 
 test "AOS" {
-    var ss = sparse_set_aos.SparseSetAOS(u32, u8, i32).init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = sparse_set_aos.SparseSetAOS(u32, u8, i32, false).init(std.debug.global_allocator, 128, 8) catch unreachable;
     defer (ss.deinit());
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
@@ -142,13 +142,76 @@ test "SOA system" {
     testing.expectEqual(Vec3{ .x = 23, .y = 0, .z = 0 }, sys.getComp(ent2));
 }
 
+test "SOA resize true" {
+    var ss = sparse_set.SparseSet(u32, u8, true).init(std.debug.global_allocator, 128, 8) catch unreachable;
+    defer (ss.deinit());
+
+    testing.expectError(error.OutOfBounds, ss.hasSparseOrError(500));
+
+    for (ss.dense_to_sparse) |sparse_undefined, sparse| {
+        var usparse = @intCast(u32, sparse) + 10;
+        var dense_new = ss.add(usparse);
+        testing.expect(ss.hasSparse(usparse));
+    }
+
+    testing.expect(!ss.hasSparse(18));
+    testing.expectEqual(@intCast(u8, 8), ss.add(18));
+    testing.expect(ss.hasSparse(18));
+    testing.expect(!ss.hasSparse(19));
+    testing.expectEqual(@intCast(u32, 16), @intCast(u32, ss.dense_to_sparse.len));
+    testing.expectEqual(@intCast(u8, 7), ss.remainingCapacity());
+    testing.expectEqual(@intCast(u32, 10), ss.dense_to_sparse[0]);
+    testing.expectEqual(@intCast(u32, 11), ss.dense_to_sparse[1]);
+    testing.expectEqual(@intCast(u32, 12), ss.dense_to_sparse[2]);
+    testing.expectEqual(@intCast(u32, 13), ss.dense_to_sparse[3]);
+    testing.expectEqual(@intCast(u32, 16), ss.dense_to_sparse[6]);
+    testing.expectEqual(@intCast(u32, 17), ss.dense_to_sparse[7]);
+    testing.expectEqual(@intCast(u32, 18), ss.dense_to_sparse[8]);
+
+    ss.clear();
+    testing.expect(!(ss.hasSparse(1)));
+}
+
+test "AOS resize true" {
+    var ss = sparse_set_aos.SparseSetAOS(u32, u8, Vec3, true).init(std.debug.global_allocator, 128, 8) catch unreachable;
+    defer (ss.deinit());
+
+    testing.expectError(error.OutOfBounds, ss.hasSparseOrError(500));
+
+    for (ss.dense_to_sparse) |sparse_undefined, sparse| {
+        var usparse = @intCast(u32, sparse) + 10;
+        var value = Vec3{ .x = @intToFloat(f32, sparse), .y = 0, .z = 0 };
+        var dense_new = ss.add(usparse, value);
+        testing.expect(ss.hasSparse(usparse));
+        testing.expectEqual(value, ss.getValueBySparse(usparse).*);
+    }
+
+    testing.expect(!ss.hasSparse(18));
+    testing.expectEqual(@intCast(u8, 8), ss.add(18, Vec3{ .x = 8, .y = 0, .z = 0 }));
+    testing.expect(ss.hasSparse(18));
+    testing.expect(!ss.hasSparse(19));
+    testing.expectEqual(@intCast(u8, 7), ss.remainingCapacity());
+    testing.expectEqual(Vec3{ .x = 0, .y = 0, .z = 0 }, ss.getValueBySparse(10).*);
+    testing.expectEqual(Vec3{ .x = 1, .y = 0, .z = 0 }, ss.getValueBySparse(11).*);
+    testing.expectEqual(Vec3{ .x = 2, .y = 0, .z = 0 }, ss.getValueBySparse(12).*);
+    testing.expectEqual(Vec3{ .x = 3, .y = 0, .z = 0 }, ss.getValueBySparse(13).*);
+    testing.expectEqual(Vec3{ .x = 4, .y = 0, .z = 0 }, ss.getValueBySparse(14).*);
+    testing.expectEqual(Vec3{ .x = 5, .y = 0, .z = 0 }, ss.getValueBySparse(15).*);
+    testing.expectEqual(Vec3{ .x = 6, .y = 0, .z = 0 }, ss.getValueBySparse(16).*);
+    testing.expectEqual(Vec3{ .x = 7, .y = 0, .z = 0 }, ss.getValueBySparse(17).*);
+    testing.expectEqual(Vec3{ .x = 8, .y = 0, .z = 0 }, ss.getValueBySparse(18).*);
+
+    ss.clear();
+    testing.expect(!(ss.hasSparse(1)));
+}
+
 const MyPositionSystemAOS = struct {
-    component_set: sparse_set_aos.SparseSetAOS(Entity, u8, Vec3) = undefined,
+    component_set: sparse_set_aos.SparseSetAOS(Entity, u8, Vec3, false) = undefined,
     const Self = @This();
 
     pub fn init() MyPositionSystemAOS {
         return Self{
-            .component_set = sparse_set_aos.SparseSetAOS(Entity, u8, Vec3).init(std.debug.global_allocator, 128, 8) catch unreachable,
+            .component_set = sparse_set_aos.SparseSetAOS(Entity, u8, Vec3, false).init(std.debug.global_allocator, 128, 8) catch unreachable,
         };
     }
 
@@ -176,7 +239,7 @@ const MyPositionSystemAOS = struct {
 };
 
 const MyPositionSystemSOA = struct {
-    component_set: sparse_set.SparseSet(Entity, u8) = undefined,
+    component_set: sparse_set.SparseSet(Entity, u8, false) = undefined,
     xs: [256]f32 = [_]f32{0} ** 256,
     ys: [256]f32 = [_]f32{0} ** 256,
     zs: [256]f32 = [_]f32{0} ** 256,
@@ -184,7 +247,7 @@ const MyPositionSystemSOA = struct {
 
     pub fn init() MyPositionSystemSOA {
         return Self{
-            .component_set = sparse_set.SparseSet(Entity, u8).init(std.debug.global_allocator, 128, 8) catch unreachable,
+            .component_set = sparse_set.SparseSet(Entity, u8, false).init(std.debug.global_allocator, 128, 8) catch unreachable,
         };
     }
 

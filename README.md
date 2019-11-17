@@ -4,7 +4,7 @@ An implementation of Sparse Sets for Zig.
 
 ## :confused: What is a Sparse Set? :confused:
 
-A Sparse Set is a fairly simple data structure with some properties that make it especially useful for some aspects in game development, but you know... it's probably interesting for other areas too.
+A Sparse Set - well, this implementation technique specifically at least - is a fairly simple data structure with some properties that make it especially useful for some aspects in game development, but you know... it's probably interesting for other areas too.
 
 Here's a good introduction: https://research.swtch.com/sparse
 
@@ -18,8 +18,8 @@ Maybe your game has a few hundred **entities** with a certain **component** (spe
 
 ```zig
 for (active_entities) |entity| {
-    var some_big_component = &self.components[entity];
-    some_component.x += 3;
+    var some_big_component = &self.big_components[entity];
+    some_big_component.x += 3;
 }
 ```
 
@@ -54,11 +54,12 @@ for (self.component_set.toValueSlice()) |*some_component| {
 3) **O(1)** **Clear** (remove all elements).
 4) **O(d)** iteration (dense list).
 5) Elements of sparse and dense lists do not need to be (and are not) initialized upon startup - they are undefined.
-6) Supports SoA-style component layout.
-7) If you only need mapping to one array of objects, you can use SparseSetAOS for convenience.
+6) Supports SOA-style component layout. (See **References** below if you're unfamiliar with what that is)
+7) Supports AOS-style too: If you only need mapping to one array of objects, you can use SparseSetAOS for convenience.
 8) Can be inspected "easily" in a debugger.
 9) Optional error-handling.
 10) Even if you don't need to loop over the values, a sparse set is a potential alternative to a hash map.
+11) Optionally growable.
 
 :star: [1] This is nice and important because you can then do:
 
@@ -72,8 +73,10 @@ for (self.component_set.toValueSlice()) |*some_component, dense_index| {
 
 :star: [2] The O(1) remove is important. It is solved by swapping in the last element into the removed spot. So there's two things to consider there:
 
-1) Is it cheap to copy the data? Like if your component is large or needs some kind of allocation logic on copy.
+1) Is it cheap to copy the data? Like, if your component is large or needs some kind of allocation logic on copy.
 2) Is it OK that the list of components are **unsorted**? If not, sparse sets are not a good fit.
+
+:star: [5] Special care has been taken (depending on a couple of coming Zig changes) to ensure that neither Valgrind nor Zig will complain about possibly accessing uninitialized memory.
 
 :star: [6] With the standard SparseSet implementation, it doesn't actually store any data - you have to do that manually. If you want to, you can store it in an SOA - "Structure of Arrays" manner, like so:
 
@@ -93,7 +96,7 @@ const MyPositionSystemSOA = struct {
     zs: [256]f32 = [_]f32{0} ** 256,
 ```
 
-The trick then is to handle the dense indices:
+The trick then is to **make sure** you handle the dense indices:
 
 ```zig
 const MyPositionSystem = struct {
@@ -162,9 +165,9 @@ const MyPositionSystemAOS = struct {
     * **Note:** The dense -> sparse lookup is likely significantly smaller: `@sizeof(SparseT) * MaxDenseValue`, so for example `256 * 2 bytes = 512 bytes`.
 4) If you don't need to loop over the elements, and are starved for memory, a hash map might be a better option.
 5) Compared to looking the value up directly using the sparse handle as an array index, there's an extra indirection.
-6) Using uninitialized memory may cause some validators to complain.
+6) Using uninitialized memory may cause some validators to complain. As mentioned above, Valgrind and Zig should be fine.
 
-So, all in all there are of course benefits and drawbacks to sparse sets. You'll have to consider this on a case-by-case basis.
+So, all in all, there are of course benefits and drawbacks to sparse sets. You'll have to consider this on a case-by-case basis.
 
 ## :page_with_curl: License :page_with_curl:
 
@@ -176,6 +179,8 @@ See `src/test.zig`.
 
 ## :paperclip: References :paperclip:
 
-* [incrediblejr's](https://gist.github.com/incrediblejr) C [implementation](https://gist.github.com/incrediblejr/931efb7587e1ab328fa65ecc94d1009f).
-* The original (?) [article](https://research.swtch.com/sparse) describing sparse sets.
+* [incrediblejr's](https://gist.github.com/incrediblejr) C implementation [ijss](https://gist.github.com/incrediblejr/931efb7587e1ab328fa65ecc94d1009f).
+* The above [article](https://research.swtch.com/sparse) describing this technique.
 * The [Zig](https://ziglang.org/) language.
+* Jonathan Blow SOA/AOS [video](https://youtu.be/YGTZr6bmNmk) overview.
+* My [twitter](https://twitter.com/Srekel).
