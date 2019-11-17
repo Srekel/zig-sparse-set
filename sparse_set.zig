@@ -7,10 +7,20 @@ pub const AllowResize = union(enum) {
     No,
 };
 
+pub const SparseSetConfig = struct {
+    SparseT: type,
+    DenseT: type,
+    allow_resize: AllowResize,
+};
+
 /// Creates a Sparse Set
 /// See https://github.com/Srekel/zig-sparse-set for latest version and documentation
 /// Also see the unit tests for usage examples.
-pub fn SparseSet(comptime SparseT: type, comptime DenseT: type, comptime allow_resize: AllowResize) type {
+pub fn SparseSet(comptime config: SparseSetConfig) type {
+    const SparseT = config.SparseT;
+    const DenseT = config.DenseT;
+    const allow_resize = config.allow_resize;
+
     return struct {
         const Self = @This();
 
