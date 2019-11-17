@@ -104,7 +104,7 @@ pub fn SparseSetAOS(comptime SparseT: type, comptime DenseT: type, comptime Valu
                 return error.AlreadyRegistered;
             }
 
-            return self.add(sparse);
+            return self.add(sparse, ValueT);
         }
 
         /// Removes the sparse/dense index, and replaces it with the last ones.
@@ -117,6 +117,7 @@ pub fn SparseSetAOS(comptime SparseT: type, comptime DenseT: type, comptime Valu
             var dense = self.sparse_to_dense[sparse];
             self.dense_to_sparse[dense] = last_sparse;
             self.sparse_to_dense[last_sparse] = dense;
+            self.values[dense] = self.values[last_dense];
             self.dense_count -= 1;
 
             dense_old.* = last_dense;
