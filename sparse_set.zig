@@ -5,7 +5,7 @@ const assert = std.debug.assert;
 /// Creates a Sparse Set
 /// See https://github.com/Srekel/zig-sparse-set for latest version and documentation
 /// Also see the unit tests for usage examples.
-pub fn SparseSet(comptime SparseT: type, comptime DenseT: type) type {
+pub fn SparseSet(comptime SparseT: type, comptime DenseT: type, comptime allow_resize: bool) type {
     return struct {
         const Self = @This();
 
@@ -55,6 +55,18 @@ pub fn SparseSet(comptime SparseT: type, comptime DenseT: type) type {
 
         /// Registers the sparse value and matches it to a dense index
         pub fn add(self: *Self, sparse: SparseT) DenseT {
+            if (allow_resize) {
+                if (self.dense_count == self.capacity_dense) {
+                    // Possible TODO: Expose growth factor
+                    var capacity_dense_new = self.capacity_dense * 2;
+                    var dts_new = self.allocator.alloc(SparseT, capacity_dense_new) catch unreachable;
+                    std.mem.copy(SparseT, dts_new[0..self.dense_count], self.dense_to_sparse);
+                    self.allocator.free(self.dense_to_sparse);
+                    self.dense_to_sparse = dts_new;
+                    self.capacity_dense = capacity_dense_new;
+                }
+            }
+
             assert(sparse < self.capacity_sparse);
             assert(self.dense_count < self.capacity_dense);
             assert(!self.hasSparse(sparse));

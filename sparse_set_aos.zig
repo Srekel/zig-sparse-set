@@ -5,7 +5,7 @@ const assert = std.debug.assert;
 /// Creates a Sparse Set with convenience functionality for AOS-style data.
 /// See https://github.com/Srekel/zig-sparse-set for latest version and documentation
 /// Also see the unit tests for usage examples.
-pub fn SparseSetAOS(comptime SparseT: type, comptime DenseT: type, comptime ValueT: type) type {
+pub fn SparseSetAOS(comptime SparseT: type, comptime DenseT: type, comptime ValueT: type, comptime allow_resize: bool) type {
     return struct {
         const Self = @This();
 
@@ -60,6 +60,22 @@ pub fn SparseSetAOS(comptime SparseT: type, comptime DenseT: type, comptime Valu
 
         /// Registers the sparse value and matches it to a dense index
         pub fn add(self: *Self, sparse: SparseT, value: ValueT) DenseT {
+            if (allow_resize) {
+                if (self.dense_count == self.capacity_dense) {
+                    // Possible TODO: Expose growth factor
+                    var capacity_dense_new = self.capacity_dense * 2;
+                    var dts_new = self.allocator.alloc(SparseT, capacity_dense_new) catch unreachable;
+                    var values_new = self.allocator.alloc(ValueT, capacity_dense_new) catch unreachable;
+                    std.mem.copy(SparseT, dts_new[0..self.dense_count], self.dense_to_sparse);
+                    std.mem.copy(ValueT, values_new[0..self.dense_count], self.values);
+                    self.allocator.free(self.dense_to_sparse);
+                    self.allocator.free(self.values);
+                    self.dense_to_sparse = dts_new;
+                    self.values = values_new;
+                    self.capacity_dense = capacity_dense_new;
+                }
+            }
+
             assert(sparse < self.capacity_sparse);
             assert(self.dense_count < self.capacity_dense);
             assert(!self.hasSparse(sparse));
