@@ -22,7 +22,7 @@ pub fn SparseSet(comptime SparseT: type, comptime DenseT: type, comptime allow_r
             // Could be <= but I'm not sure why'd you use a sparse_set if you don't have more sparse
             // indices than dense...
             assert(capacity_dense < capacity_sparse);
-            return Self{
+            var self = Self{
                 .allocator = allocator,
                 .dense_to_sparse = try allocator.alloc(SparseT, capacity_dense),
                 .sparse_to_dense = try allocator.alloc(DenseT, capacity_sparse),
@@ -30,6 +30,10 @@ pub fn SparseSet(comptime SparseT: type, comptime DenseT: type, comptime allow_r
                 .capacity_sparse = capacity_sparse,
                 .dense_count = 0,
             };
+
+            // Ensure Valgrind doesn't complain
+            // std.valgrind.memcheck.makeMemDefined(@ptrCast([*]u8, self.sparse_to_dense.ptr)[0 .. @sizeOf(DenseT) * self.capacity_sparse]);
+            return self;
         }
 
         pub fn deinit(self: Self) void {
