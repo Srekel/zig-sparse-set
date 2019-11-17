@@ -13,7 +13,6 @@ pub fn build(b: *Builder) void {
         tests.setBuildMode(test_mode);
         tests.setNamePrefix(mode_str ++ " ");
         tests.addPackagePath("sparse_set", "sparse_set.zig");
-        tests.addPackagePath("sparse_set_aos", "sparse_set_aos.zig");
 
         const test_step = b.step("test-" ++ mode_str, "Run all tests in " ++ mode_str ++ ".");
         test_step.dependOn(&tests.step);
