@@ -55,6 +55,9 @@ pub fn SparseSet(comptime SparseT: type, comptime DenseT: type) type {
 
         /// Registers the sparse value and matches it to a dense index
         pub fn add(self: *Self, sparse: SparseT) DenseT {
+            assert(sparse < self.capacity_sparse);
+            assert(self.dense_count < self.capacity_dense);
+            assert(!self.hasSparse(sparse));
             self.dense_to_sparse[self.dense_count] = sparse;
             self.sparse_to_dense[sparse] = self.dense_count;
             self.dense_count += 1;
@@ -63,6 +66,10 @@ pub fn SparseSet(comptime SparseT: type, comptime DenseT: type) type {
 
         /// May return error.OutOfBounds or error.AlreadyRegistered, otherwise calls add.
         pub fn addOrError(self: *Self, sparse: SparseT) !DenseT {
+            if (sparse >= self.capacity_sparse) {
+                return error.OutOfBounds;
+            }
+
             if (self.dense_count == self.capacity_dense) {
                 return error.OutOfBounds;
             }
@@ -78,6 +85,7 @@ pub fn SparseSet(comptime SparseT: type, comptime DenseT: type) type {
         /// dense_old and dense_new is
         pub fn removeWithInfo(self: *Self, sparse: SparseT, dense_old: *DenseT, dense_new: *DenseT) void {
             assert(self.dense_count > 0);
+            assert(self.hasSparse(sparse));
             var last_dense = self.dense_count - 1;
             var last_sparse = self.dense_to_sparse[last_dense];
             var dense = self.sparse_to_dense[sparse];
@@ -95,16 +103,18 @@ pub fn SparseSet(comptime SparseT: type, comptime DenseT: type) type {
                 return error.OutOfBounds;
             }
 
-            if (!self.hasSparse(sparse)) {
-                return error.OutOfBounds;
+            if (!try self.hasSparseOrError(sparse)) {
+                return error.NotRegistered;
             }
 
             return self.removeWithInfo(sparse, dense_old, dense_new);
         }
 
-        /// Like removeWithInfo info, but slightly faster, in case you don't care about the switch
+        /// Like removeWithInfo info, but slightly faster, in case you don't care about the switch,
+        /// which you probably *do*, so this should only be used in rare cases.
         pub fn remove(self: *Self, sparse: SparseT) void {
             assert(self.dense_count > 0);
+            assert(self.hasSparse(sparse));
             var last_dense = self.dense_count - 1;
             var last_sparse = self.dense_to_sparse[last_dense];
             var dense = self.sparse_to_dense[sparse];
@@ -113,15 +123,24 @@ pub fn SparseSet(comptime SparseT: type, comptime DenseT: type) type {
             self.dense_count -= 1;
         }
 
+        /// May return error.OutOfBounds or error.NotRegistered, otherwise calls self.remove
         pub fn removeOrError(self: *Self, sparse: SparseT) !void {
-            if (errored and self.dense_count == 0) {
+            if (self.dense_count == 0) {
                 return error.OutOfBounds;
             }
-            return self.remove(sparse);
+
+            if (!try self.hasSparseOrError(sparse)) {
+                return error.NotRegistered;
+            }
+
+            self.remove(sparse);
         }
 
         /// Returns true if the sparse is registered to a dense index
         pub fn hasSparse(self: Self, sparse: SparseT) bool {
+            // Unsure if this call to disable runtime safety is needed - can add later if so.
+            // @setRuntimeSafety(false);
+            assert(sparse < self.capacity_sparse);
             var dense = self.sparse_to_dense[sparse];
             return dense < self.dense_count and self.dense_to_sparse[dense] == sparse;
         }
@@ -137,6 +156,7 @@ pub fn SparseSet(comptime SparseT: type, comptime DenseT: type) type {
 
         /// Returns corresponding dense index
         pub fn getBySparse(self: Self, sparse: SparseT) DenseT {
+            assert(self.hasSparse(sparse));
             return self.sparse_to_dense[sparse];
         }
 
