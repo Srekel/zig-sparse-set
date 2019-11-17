@@ -2,10 +2,15 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const assert = std.debug.assert;
 
+pub const AllowResize = union(enum) {
+    Yes,
+    No,
+};
+
 /// Creates a Sparse Set
 /// See https://github.com/Srekel/zig-sparse-set for latest version and documentation
 /// Also see the unit tests for usage examples.
-pub fn SparseSet(comptime SparseT: type, comptime DenseT: type, comptime allow_resize: bool) type {
+pub fn SparseSet(comptime SparseT: type, comptime DenseT: type, comptime allow_resize: AllowResize) type {
     return struct {
         const Self = @This();
 
@@ -45,7 +50,7 @@ pub fn SparseSet(comptime SparseT: type, comptime DenseT: type, comptime allow_r
             self.dense_count = 0;
         }
 
-        pub fn len(self: *Self) void {
+        pub fn len(self: Self) void {
             return self.dense_count;
         }
 
@@ -59,7 +64,7 @@ pub fn SparseSet(comptime SparseT: type, comptime DenseT: type, comptime allow_r
 
         /// Registers the sparse value and matches it to a dense index
         pub fn add(self: *Self, sparse: SparseT) DenseT {
-            if (allow_resize) {
+            if (allow_resize == AllowResize.Yes) {
                 if (self.dense_count == self.capacity_dense) {
                     // Possible TODO: Expose growth factor
                     var capacity_dense_new = self.capacity_dense * 2;
