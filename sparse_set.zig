@@ -12,6 +12,11 @@ pub const ValueLayout = union(enum) {
     ExternalStructOfArraysSupport,
 };
 
+pub const ValueInitialization = union(enum) {
+    Untouched,
+    ZeroInitialized,
+};
+
 pub const SparseSetConfig = struct {
     /// The type used for the sparse handle
     SparseT: type,
@@ -25,11 +30,12 @@ pub const SparseSetConfig = struct {
     /// Set this based on if your values are AOS/SOA internally/externally
     value_layout: ValueLayout,
 
+    /// Set to ZeroInitialized to make values created with add() be zero initialized
+    /// Only valid with value_layout == .InternalArrayOfStructs
+    value_init: ValueInitialization = .Untouched,
+
     /// Whether or not the amount of dense indices (and values) can grow
     allow_resize: AllowResize = .NoResize,
-
-    /// Set to true to make values created with add() be zero initialized
-    zeroed_values: bool = false,
 };
 
 /// Creates a Sparse Set
@@ -41,7 +47,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
     comptime const ValueT = config.ValueT;
     comptime const allow_resize = config.allow_resize;
     comptime const value_layout = config.value_layout;
-    comptime const zeroed_values = config.zeroed_values;
+    comptime const value_init = config.value_init;
 
     return struct {
         const Self = @This();
@@ -146,7 +152,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             assert(!self.hasSparse(sparse));
             self.dense_to_sparse[self.dense_count] = sparse;
             self.sparse_to_dense[sparse] = self.dense_count;
-            if (value_layout == .InternalArrayOfStructs and zeroed_values) {
+            if (value_layout == .InternalArrayOfStructs and value_init == .ZeroInitialized) {
                 std.mem.set(u8, std.mem.asBytes(&self.values[self.dense_count]), 0);
             }
 
