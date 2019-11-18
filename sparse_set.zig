@@ -3,8 +3,8 @@ const Allocator = std.mem.Allocator;
 const assert = std.debug.assert;
 
 pub const AllowResize = union(enum) {
-    Yes,
-    No,
+    ResizeAllowed,
+    NoResize,
 };
 
 pub const ValueLayout = union(enum) {
@@ -26,7 +26,7 @@ pub const SparseSetConfig = struct {
     value_layout: ValueLayout,
 
     /// Whether or not the amount of dense indices (and values) can grow
-    allow_resize: AllowResize = .No,
+    allow_resize: AllowResize = .NoResize,
 
     /// Set to true to make values created with add() be zero initialized
     zeroed_values: bool = false,
@@ -131,7 +131,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
         /// will never fail for your use cases.
         ///  If that is not an option, use addOrError.
         pub fn add(self: *Self, sparse: SparseT) DenseT {
-            if (allow_resize == .Yes) {
+            if (allow_resize == .ResizeAllowed) {
                 if (self.dense_count == self.capacity_dense) {
                     self.capacity_dense = self.capacity_dense * 2;
                     self.dense_to_sparse = self.allocator.realloc(self.dense_to_sparse, self.capacity_dense) catch unreachable;
@@ -166,7 +166,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             }
 
             if (self.dense_count == self.capacity_dense) {
-                if (allow_resize == .Yes) {
+                if (allow_resize == .ResizeAllowed) {
                     self.capacity_dense = self.capacity_dense * 2;
                     self.dense_to_sparse = try self.allocator.realloc(self.dense_to_sparse, self.capacity_dense);
                     if (value_layout == .InternalArrayOfStructs) {
@@ -189,7 +189,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
                 /// will never fail for your use cases.
                 ///  If that is not an option, use addOrError.
                 pub fn addValue(self: *Self, sparse: SparseT, value: ValueT) DenseT {
-                    if (allow_resize == .Yes) {
+                    if (allow_resize == .ResizeAllowed) {
                         if (self.dense_count == self.capacity_dense) {
                             self.capacity_dense = self.capacity_dense * 2;
                             self.dense_to_sparse = self.allocator.realloc(self.dense_to_sparse, self.capacity_dense) catch unreachable;
@@ -221,7 +221,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
                     }
 
                     if (self.dense_count == self.capacity_dense) {
-                        if (allow_resize == .Yes) {
+                        if (allow_resize == .ResizeAllowed) {
                             self.capacity_dense = self.capacity_dense * 2;
                             self.dense_to_sparse = try self.allocator.realloc(self.dense_to_sparse, self.capacity_dense);
                             if (value_layout == .InternalArrayOfStructs) {

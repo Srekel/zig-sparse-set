@@ -15,14 +15,14 @@ const Vec3 = struct {
 const DefaultTestSparseSet = sparse_set.SparseSet(.{
     .SparseT = Entity,
     .DenseT = DenseT,
-    .allow_resize = sparse_set.AllowResize.No,
+    .allow_resize = .NoResize,
     .value_layout = .ExternalStructOfArraysSupport,
 });
 
-const RezisableDefaultTestSparseSet = sparse_set.SparseSet(.{
+const ResizableDefaultTestSparseSet = sparse_set.SparseSet(.{
     .SparseT = Entity,
     .DenseT = DenseT,
-    .allow_resize = sparse_set.AllowResize.Yes,
+    .allow_resize = .ResizeAllowed,
     .value_layout = .ExternalStructOfArraysSupport,
 });
 
@@ -30,7 +30,7 @@ const DefaultTestAOSSimpleSparseSet = sparse_set.SparseSet(.{
     .SparseT = Entity,
     .DenseT = DenseT,
     .ValueT = i32,
-    .allow_resize = sparse_set.AllowResize.No,
+    .allow_resize = .NoResize,
     .value_layout = .InternalArrayOfStructs,
 });
 
@@ -38,7 +38,7 @@ const DefaultTestAOSSystemSparseSet = sparse_set.SparseSet(.{
     .SparseT = Entity,
     .DenseT = DenseT,
     .ValueT = Vec3,
-    .allow_resize = sparse_set.AllowResize.No,
+    .allow_resize = .NoResize,
     .value_layout = .InternalArrayOfStructs,
 });
 
@@ -46,14 +46,14 @@ const DefaultTestAOSVec3ResizableSparseSet = sparse_set.SparseSet(.{
     .SparseT = Entity,
     .DenseT = DenseT,
     .ValueT = Vec3,
-    .allow_resize = sparse_set.AllowResize.Yes,
+    .allow_resize = .ResizeAllowed,
     .value_layout = .InternalArrayOfStructs,
 });
 
 test "init safe" {
     var ss = DefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
     for (ss.sparse_to_dense) |dense_undefined, sparse| {
-        var usparse = @intCast(u32, sparse);
+        var usparse = @intCast(Entity, sparse);
         testing.expect(!(ss.hasSparse(usparse)));
     }
     ss.deinit();
@@ -64,7 +64,7 @@ test "add / remove safe 1" {
     defer (ss.deinit());
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
-        var usparse = @intCast(u32, sparse) + 10;
+        var usparse = @intCast(Entity, sparse) + 10;
         var dense_new = ss.add(usparse);
         testing.expectEqual(@intCast(DenseT, sparse), dense_new);
         testing.expect(ss.hasSparse(usparse));
@@ -95,7 +95,7 @@ test "add / remove safe 3" {
     defer (ss.deinit());
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
-        var usparse = @intCast(u32, sparse) + 10;
+        var usparse = @intCast(Entity, sparse) + 10;
         _ = ss.add(usparse);
     }
 
@@ -115,7 +115,7 @@ test "AOS" {
     defer (ss.deinit());
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
-        var usparse = @intCast(u32, sparse) + 10;
+        var usparse = @intCast(Entity, sparse) + 10;
         var value = -@intCast(i32, sparse);
         var dense_new = ss.addValue(usparse, value);
         testing.expectEqual(@intCast(DenseT, sparse), dense_new);
@@ -181,13 +181,13 @@ test "SOA system" {
 }
 
 test "SOA resize true" {
-    var ss = RezisableDefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = ResizableDefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
     defer (ss.deinit());
 
     testing.expectError(error.OutOfBounds, ss.hasSparseOrError(500));
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
-        var usparse = @intCast(u32, sparse) + 10;
+        var usparse = @intCast(Entity, sparse) + 10;
         var dense_new = ss.add(usparse);
         testing.expect(ss.hasSparse(usparse));
     }
@@ -198,13 +198,13 @@ test "SOA resize true" {
     testing.expect(!ss.hasSparse(19));
     testing.expectEqual(@intCast(u32, 16), @intCast(u32, ss.dense_to_sparse.len));
     testing.expectEqual(@intCast(DenseT, 7), ss.remainingCapacity());
-    testing.expectEqual(@intCast(u32, 10), ss.dense_to_sparse[0]);
-    testing.expectEqual(@intCast(u32, 11), ss.dense_to_sparse[1]);
-    testing.expectEqual(@intCast(u32, 12), ss.dense_to_sparse[2]);
-    testing.expectEqual(@intCast(u32, 13), ss.dense_to_sparse[3]);
-    testing.expectEqual(@intCast(u32, 16), ss.dense_to_sparse[6]);
-    testing.expectEqual(@intCast(u32, 17), ss.dense_to_sparse[7]);
-    testing.expectEqual(@intCast(u32, 18), ss.dense_to_sparse[8]);
+    testing.expectEqual(@intCast(Entity, 10), ss.dense_to_sparse[0]);
+    testing.expectEqual(@intCast(Entity, 11), ss.dense_to_sparse[1]);
+    testing.expectEqual(@intCast(Entity, 12), ss.dense_to_sparse[2]);
+    testing.expectEqual(@intCast(Entity, 13), ss.dense_to_sparse[3]);
+    testing.expectEqual(@intCast(Entity, 16), ss.dense_to_sparse[6]);
+    testing.expectEqual(@intCast(Entity, 17), ss.dense_to_sparse[7]);
+    testing.expectEqual(@intCast(Entity, 18), ss.dense_to_sparse[8]);
 
     ss.clear();
     testing.expect(!(ss.hasSparse(1)));
@@ -217,7 +217,7 @@ test "AOS resize true" {
     testing.expectError(error.OutOfBounds, ss.hasSparseOrError(500));
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
-        var usparse = @intCast(u32, sparse) + 10;
+        var usparse = @intCast(Entity, sparse) + 10;
         var value = Vec3{ .x = @intToFloat(f32, sparse), .y = 0, .z = 0 };
         var dense_new = ss.addValue(usparse, value);
         testing.expect(ss.hasSparse(usparse));
