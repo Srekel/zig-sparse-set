@@ -1,3 +1,9 @@
+/// Sparse Set
+/// Version 1.0.0
+/// See https://github.com/Srekel/zig-sparse-set for latest version and documentation.
+/// See unit tests for usage examples.
+///
+/// Dual license: Unlicense / MIT
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const assert = std.debug.assert;
@@ -24,10 +30,12 @@ pub const SparseSetConfig = struct {
     /// The type used for dense indices
     DenseT: type,
 
-    /// Optional: The type use for values when using InternalArrayOfStructs
+    /// Optional: The type used for values when using InternalArrayOfStructs
     ValueT: type = void,
 
-    /// Set this based on if your values are AOS/SOA internally/externally
+    /// If you only have a single array of structs - AOS - letting SparseSet handle it
+    /// with InternalArrayOfStructs is convenient. If you want to manage the data
+    /// yourself or if you're using SOA, use ExternalStructOfArraysSupport
     value_layout: ValueLayout,
 
     /// Set to ZeroInitialized to make values created with add() be zero initialized
@@ -38,9 +46,7 @@ pub const SparseSetConfig = struct {
     allow_resize: AllowResize = .NoResize,
 };
 
-/// Creates a Sparse Set
-/// See https://github.com/Srekel/zig-sparse-set for latest version and documentation
-/// Also see the unit tests for usage examples.
+/// Creates a specific Sparse Set type based on the config
 pub fn SparseSet(comptime config: SparseSetConfig) type {
     comptime const SparseT = config.SparseT;
     comptime const DenseT = config.DenseT;
@@ -359,7 +365,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
                     return &self.values[dense];
                 }
 
-                // First tries hasSparse, then returns getValueBySparse()
+                /// First tries hasSparse, then returns getValueBySparse()
                 pub fn getValueBySparseOrError(self: Self, sparse: SparseT) !*ValueT {
                     _ = try self.hasSparseOrError(sparse);
                     return getValueBySparse();
@@ -371,7 +377,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
                     return &self.values[dense];
                 }
 
-                // Returns error.OutOfBounds or getValueByDense()
+                /// Returns error.OutOfBounds or getValueByDense()
                 pub fn getValueByDenseOrError(self: Self, dense: DenseT) !*ValueT {
                     if (dense >= self.dense_count) {
                         return error.OutOfBounds;

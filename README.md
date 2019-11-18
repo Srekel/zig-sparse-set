@@ -55,7 +55,7 @@ for (self.component_set.toValueSlice()) |*some_component| {
 4) **O(d)** iteration (dense list).
 5) Elements of sparse and dense lists do not need to be (and are not) initialized upon startup - they are undefined.
 6) Supports SOA-style component layout. (See **References** below if you're unfamiliar with what that is)
-7) Supports AOS-style too: If you only need mapping to one array of objects, you can use SparseSetAOS for convenience.
+7) Supports AOS-style too by optionally storing and managing a value array internally.
 8) Can be inspected "easily" in a debugger.
 9) Optional error-handling.
 10) Even if you don't need to loop over the values, a sparse set is a potential alternative to a hash map.
