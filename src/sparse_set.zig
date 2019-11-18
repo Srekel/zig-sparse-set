@@ -1,9 +1,9 @@
-/// Sparse Set
-/// Version 1.0.0
-/// See https://github.com/Srekel/zig-sparse-set for latest version and documentation.
-/// See unit tests for usage examples.
-///
-/// Dual license: Unlicense / MIT
+//! Sparse Set
+//! Version 1.0.1
+//! See https://github.com/Srekel/zig-sparse-set for latest version and documentation.
+//! See unit tests for usage examples.
+//!
+//! Dual license: Unlicense / MIT
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const assert = std.debug.assert;
@@ -64,6 +64,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
     comptime const allow_resize = config.allow_resize;
     comptime const value_layout = config.value_layout;
     comptime const value_init = config.value_init;
+    assert((value_layout == .ExternalStructOfArraysSupport) or (ValueT != @typeOf(void)));
 
     return struct {
         const Self = @This();
@@ -138,8 +139,8 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             self.dense_count = 0;
         }
 
-        /// Returns the amonut of allocated handles.
-        pub fn len(self: Self) void {
+        /// Returns the amount of allocated handles.
+        pub fn len(self: Self) DenseT {
             return self.dense_count;
         }
 
@@ -152,6 +153,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
         // TODO: Rewrite after https://github.com/ziglang/zig/issues/1717
         pub usingnamespace switch (value_layout) {
             .InternalArrayOfStructs => struct {
+                /// Returns a slice that can be used to loop over the values.
                 pub fn toValueSlice(self: Self) []ValueT {
                     return self.values[0..self.dense_count];
                 }
@@ -164,11 +166,11 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             return self.capacity_dense - self.dense_count;
         }
 
-        /// Registers the sparse value and matches it to a dense index
+        /// Registers the sparse value and matches it to a dense index.
         /// Grows .dense_to_sparse and .values if needed and resizing is allowed.
         /// Note: If resizing is allowed, you must use an allocator that you are sure
         /// will never fail for your use cases.
-        ///  If that is not an option, use addOrError.
+        /// If that is not an option, use addOrError.
         pub fn add(self: *Self, sparse: SparseT) DenseT {
             if (allow_resize == .ResizeAllowed) {
                 if (self.dense_count == self.capacity_dense) {
@@ -296,7 +298,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             dense_new.* = dense;
         }
 
-        /// May return error.OutOfBounds, otherwise alls removeWithInfo
+        /// May return error.OutOfBounds, otherwise calls removeWithInfo.
         pub fn removeWithInfoOrError(self: *Self, sparse: SparseT, dense_old: *DenseT, dense_new: *DenseT) !void {
             if (self.dense_count == 0) {
                 return error.OutOfBounds;
@@ -309,7 +311,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             return self.removeWithInfo(sparse, dense_old, dense_new);
         }
 
-        /// Like removeWithInfo info, but slightly faster, in case you don't care about the switch
+        /// Like removeWithInfo info, but slightly faster, in case you don't care about the switch.
         pub fn remove(self: *Self, sparse: SparseT) void {
             assert(self.dense_count > 0);
             assert(self.hasSparse(sparse));
@@ -325,7 +327,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             self.dense_count -= 1;
         }
 
-        /// May return error.OutOfBounds or error.NotRegistered, otherwise calls self.remove
+        /// May return error.OutOfBounds or error.NotRegistered, otherwise calls remove.
         pub fn removeOrError(self: *Self, sparse: SparseT) !void {
             if (self.dense_count == 0) {
                 return error.OutOfBounds;
@@ -338,7 +340,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             self.remove(sparse);
         }
 
-        /// Returns true if the sparse is registered to a dense index
+        /// Returns true if the sparse is registered to a dense index.
         pub fn hasSparse(self: Self, sparse: SparseT) bool {
             // Unsure if this call to disable runtime safety is needed - can add later if so.
             // @setRuntimeSafety(false);
@@ -347,7 +349,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             return dense < self.dense_count and self.dense_to_sparse[dense] == sparse;
         }
 
-        /// May return error.OutOfBounds, otherwise calls hasSparse
+        /// May return error.OutOfBounds, otherwise calls hasSparse.
         pub fn hasSparseOrError(self: Self, sparse: SparseT) !bool {
             if (sparse >= self.capacity_sparse) {
                 return error.OutOfBounds;
@@ -356,25 +358,25 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             return self.hasSparse(sparse);
         }
 
-        /// Returns corresponding dense index
+        /// Returns corresponding dense index.
         pub fn getBySparse(self: Self, sparse: SparseT) DenseT {
             assert(self.hasSparse(sparse));
             return self.sparse_to_dense[sparse];
         }
 
-        /// Tries hasSparseOrError, then returns getBySparse
+        /// Tries hasSparseOrError, then returns getBySparse.
         pub fn getBySparseOrError(self: Self, sparse: SparseT) !DenseT {
             _ = try self.hasSparseOrError(sparse);
             return self.getBySparse(sparse);
         }
 
-        /// Returns corresponding sparse index
+        /// Returns corresponding sparse index.
         pub fn getByDense(self: Self, dense: DenseT) SparseT {
             assert(dense < self.dense_count);
             return self.dense_to_sparse[dense];
         }
 
-        /// Returns OutOfBounds or getByDense
+        /// Returns OutOfBounds or getByDense.
         pub fn getByDenseOrError(self: Self, dense: DenseT) !SparseT {
             if (dense >= self.dense_count) {
                 return error.OutOfBounds;
@@ -392,10 +394,10 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
                     return &self.values[dense];
                 }
 
-                /// First tries hasSparse, then returns getValueBySparse()
+                /// First tries hasSparse, then returns getValueBySparse().
                 pub fn getValueBySparseOrError(self: Self, sparse: SparseT) !*ValueT {
                     _ = try self.hasSparseOrError(sparse);
-                    return getValueBySparse();
+                    return self.getValueBySparse(sparse);
                 }
 
                 /// Returns a pointer to the SOA value corresponding to the sparse parameter.
@@ -404,12 +406,12 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
                     return &self.values[dense];
                 }
 
-                /// Returns error.OutOfBounds or getValueByDense()
+                /// Returns error.OutOfBounds or getValueByDense().
                 pub fn getValueByDenseOrError(self: Self, dense: DenseT) !*ValueT {
                     if (dense >= self.dense_count) {
                         return error.OutOfBounds;
                     }
-                    return getValueByDense();
+                    return self.getValueByDense(dense);
                 }
             },
             else => struct {},
@@ -420,12 +422,36 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
 test "docs" {
     const Entity = u32;
     const DenseT = u8;
-    const DefaultTestSparseSet = SparseSet(.{
+    const DocValueT = i32;
+    const DocsSparseSet = SparseSet(.{
         .SparseT = Entity,
         .DenseT = DenseT,
+        .ValueT = DocValueT,
         .allow_resize = .NoResize,
-        .value_layout = .ExternalStructOfArraysSupport,
+        .value_layout = .InternalArrayOfStructs,
     });
-    var ss = DefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
-    ss.deinit();
+
+    var ss = DocsSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
+    defer (ss.deinit());
+
+    var ent1: Entity = 1;
+    var ent2: Entity = 2;
+    _ = try ss.addOrError(ent1);
+    _ = try ss.addValueOrError(ent2, 2);
+    std.testing.expectEqual(@as(DenseT, 2), ss.len());
+    try ss.removeOrError(ent1);
+    var old: DenseT = undefined;
+    var new: DenseT = undefined;
+    try ss.removeWithInfoOrError(ent2, &old, &new);
+    _ = ss.toSparseSlice();
+    _ = ss.toValueSlice();
+    std.testing.expectEqual(@as(DenseT, 0), ss.len());
+    ss.clear();
+    std.testing.expectEqual(@as(DenseT, 8), ss.remainingCapacity());
+
+    _ = try ss.addValueOrError(ent1, 10);
+    std.testing.expectEqual(@as(DenseT, 0), try ss.getBySparseOrError(ent1));
+    std.testing.expectEqual(@as(DocValueT, 10), (try ss.getValueBySparseOrError(ent1)).*);
+    std.testing.expectEqual(@as(Entity, ent1), try ss.getByDenseOrError(0));
+    std.testing.expectEqual(@as(DocValueT, 10), (try ss.getValueByDenseOrError(0)).*);
 }

@@ -1,7 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const testing = std.testing;
-const sparse_set = @import("sparse_set");
+usingnamespace @import("sparse_set.zig");
 
 const Entity = u32;
 const DenseT = u8;
@@ -12,21 +12,21 @@ const Vec3 = struct {
     z: f32 = 0,
 };
 
-const DefaultTestSparseSet = sparse_set.SparseSet(.{
+const DefaultTestSparseSet = SparseSet(.{
     .SparseT = Entity,
     .DenseT = DenseT,
     .allow_resize = .NoResize,
     .value_layout = .ExternalStructOfArraysSupport,
 });
 
-const ResizableDefaultTestSparseSet = sparse_set.SparseSet(.{
+const ResizableDefaultTestSparseSet = SparseSet(.{
     .SparseT = Entity,
     .DenseT = DenseT,
     .allow_resize = .ResizeAllowed,
     .value_layout = .ExternalStructOfArraysSupport,
 });
 
-const DefaultTestAOSSimpleSparseSet = sparse_set.SparseSet(.{
+const DefaultTestAOSSimpleSparseSet = SparseSet(.{
     .SparseT = Entity,
     .DenseT = DenseT,
     .ValueT = i32,
@@ -34,7 +34,7 @@ const DefaultTestAOSSimpleSparseSet = sparse_set.SparseSet(.{
     .value_layout = .InternalArrayOfStructs,
 });
 
-const DefaultTestAOSSystemSparseSet = sparse_set.SparseSet(.{
+const DefaultTestAOSSystemSparseSet = SparseSet(.{
     .SparseT = Entity,
     .DenseT = DenseT,
     .ValueT = Vec3,
@@ -42,7 +42,7 @@ const DefaultTestAOSSystemSparseSet = sparse_set.SparseSet(.{
     .value_layout = .InternalArrayOfStructs,
 });
 
-const DefaultTestAOSVec3ResizableSparseSet = sparse_set.SparseSet(.{
+const DefaultTestAOSVec3ResizableSparseSet = SparseSet(.{
     .SparseT = Entity,
     .DenseT = DenseT,
     .ValueT = Vec3,
@@ -52,10 +52,12 @@ const DefaultTestAOSVec3ResizableSparseSet = sparse_set.SparseSet(.{
 
 test "init safe" {
     var ss = DefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
+    testing.expectEqual(@intCast(DenseT, 0), ss.len());
     for (ss.sparse_to_dense) |dense_undefined, sparse| {
         var usparse = @intCast(Entity, sparse);
         testing.expect(!(ss.hasSparse(usparse)));
     }
+    testing.expectEqual(@intCast(DenseT, 0), ss.len());
     ss.deinit();
 }
 
