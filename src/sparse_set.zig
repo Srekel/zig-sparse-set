@@ -9,44 +9,54 @@ const Allocator = std.mem.Allocator;
 const assert = std.debug.assert;
 
 pub const AllowResize = union(enum) {
+    /// The fields **dense_to_sparse** and **values** will grow on **add()** and **addValue()**.
     ResizeAllowed,
+
+    /// Errors will be generated when adding more elements than **capacity_dense**.
     NoResize,
 };
 
 pub const ValueLayout = union(enum) {
+    /// AOS style.
     InternalArrayOfStructs,
+
+    /// SOA style.
     ExternalStructOfArraysSupport,
 };
 
 pub const ValueInitialization = union(enum) {
+    /// New values added with add() will contain uninitialized/random memory.
     Untouched,
+
+    /// New values added with add() will be memset to zero.
     ZeroInitialized,
 };
 
 pub const SparseSetConfig = struct {
-    /// The type used for the sparse handle
+    /// The type used for the sparse handle.
     SparseT: type,
 
-    /// The type used for dense indices
+    /// The type used for dense indices.
     DenseT: type,
 
-    /// Optional: The type used for values when using InternalArrayOfStructs
+    /// Optional: The type used for values when using **InternalArrayOfStructs**.
     ValueT: type = void,
 
     /// If you only have a single array of structs - AOS - letting SparseSet handle it
-    /// with InternalArrayOfStructs is convenient. If you want to manage the data
-    /// yourself or if you're using SOA, use ExternalStructOfArraysSupport
+    /// with **InternalArrayOfStructs** is convenient. If you want to manage the data
+    /// yourself or if you're using SOA, use **ExternalStructOfArraysSupport**.
     value_layout: ValueLayout,
 
-    /// Set to ZeroInitialized to make values created with add() be zero initialized
-    /// Only valid with value_layout == .InternalArrayOfStructs
+    /// Set to **ZeroInitialized** to make values created with add() be zero initialized.
+    /// Only valid with **value_layout == .InternalArrayOfStructs**.
+    /// Defaults to **Untouched**.
     value_init: ValueInitialization = .Untouched,
 
-    /// Whether or not the amount of dense indices (and values) can grow
+    /// Whether or not the amount of dense indices (and values) can grow.
     allow_resize: AllowResize = .NoResize,
 };
 
-/// Creates a specific Sparse Set type based on the config
+/// Creates a specific Sparse Set type based on the config.
 pub fn SparseSet(comptime config: SparseSetConfig) type {
     comptime const SparseT = config.SparseT;
     comptime const DenseT = config.DenseT;
@@ -58,16 +68,29 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
     return struct {
         const Self = @This();
 
+        /// Allocator used for allocating, growing and freeing **dense_to_sparse**, **sparse_to_dense**, and **values**.
         allocator: *Allocator,
+
+        /// Mapping from dense indices to sparse handles.
         dense_to_sparse: []SparseT,
+
+        /// Mapping from sparse handles to dense indices (and values).
         sparse_to_dense: []DenseT,
+
+        /// Optional: A list of **ValueT** that is used with **InternalArrayOfStructs**.
         values: if (value_layout == .InternalArrayOfStructs) []ValueT else void,
+
+        /// Current amount of used handles.
         dense_count: DenseT,
+
+        /// Amount of dense indices that can be stored.
         capacity_dense: DenseT,
+
+        /// Amount of sparse handles can be used for lookups.
         capacity_sparse: SparseT,
 
-        /// You can think of capacity_sparse as how many entities you want to support, and
-        /// capacity_dense as how many components.
+        /// You can think of **capacity_sparse** as how many entities you want to support, and
+        /// **capacity_dense** as how many components.
         pub fn init(allocator: *Allocator, capacity_sparse: SparseT, capacity_dense: DenseT) !Self {
             // Could be <= but I'm not sure why'd you use a sparse_set if you don't have more sparse
             // indices than dense...
@@ -101,6 +124,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             return self;
         }
 
+        /// Deallocates **dense_to_sparse**, **sparse_to_dense**, and optionally **values**.
         pub fn deinit(self: Self) void {
             self.allocator.free(self.dense_to_sparse);
             self.allocator.free(self.sparse_to_dense);
@@ -109,14 +133,17 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             }
         }
 
+        /// Resets the set cheaply.
         pub fn clear(self: *Self) void {
             self.dense_count = 0;
         }
 
+        /// Returns the amonut of allocated handles.
         pub fn len(self: Self) void {
             return self.dense_count;
         }
 
+        /// Returns a slice that can be used to loop over the sparse handles.
         pub fn toSparseSlice(self: Self) []SparseT {
             return self.dense_to_sparse[0..self.dense_count];
         }
@@ -388,4 +415,17 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             else => struct {},
         };
     };
+}
+
+test "docs" {
+    const Entity = u32;
+    const DenseT = u8;
+    const DefaultTestSparseSet = SparseSet(.{
+        .SparseT = Entity,
+        .DenseT = DenseT,
+        .allow_resize = .NoResize,
+        .value_layout = .ExternalStructOfArraysSupport,
+    });
+    var ss = DefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
+    ss.deinit();
 }

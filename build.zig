@@ -19,7 +19,18 @@ pub fn build(b: *Builder) void {
         test_all_step.dependOn(test_step);
     }
 
+    const build_docs = b.addSystemCommand([_][]const u8{
+        b.zig_exe,
+        "test",
+        "src/sparse_set.zig",
+        "-femit-docs",
+        "-fno-emit-bin",
+        "--output-dir",
+        ".",
+    });
+
     const all_step = b.step("all", "Build everything and runs all tests");
+    all_step.dependOn(&build_docs.step);
     all_step.dependOn(test_all_step);
     b.default_step.dependOn(all_step);
 }
