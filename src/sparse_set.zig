@@ -96,13 +96,22 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             // Could be <= but I'm not sure why'd you use a sparse_set if you don't have more sparse
             // indices than dense...
             assert(capacity_dense < capacity_sparse);
+
+            var dense_to_sparse = try allocator.alloc(SparseT, capacity_dense);
+            errdefer (allocator.free(dense_to_sparse));
+            var sparse_to_dense = try allocator.alloc(DenseT, capacity_sparse);
+            errdefer (allocator.free(sparse_to_dense));
+
             var self: Self = undefined;
             if (value_layout == .InternalArrayOfStructs) {
+                var values = try allocator.alloc(ValueT, capacity_dense);
+                errdefer (allocator.free(values));
+
                 self = Self{
                     .allocator = allocator,
-                    .dense_to_sparse = try allocator.alloc(SparseT, capacity_dense),
-                    .sparse_to_dense = try allocator.alloc(DenseT, capacity_sparse),
-                    .values = try allocator.alloc(ValueT, capacity_dense),
+                    .dense_to_sparse = dense_to_sparse,
+                    .sparse_to_dense = sparse_to_dense,
+                    .values = values,
                     .capacity_dense = capacity_dense,
                     .capacity_sparse = capacity_sparse,
                     .dense_count = 0,
@@ -110,8 +119,8 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             } else {
                 self = Self{
                     .allocator = allocator,
-                    .dense_to_sparse = try allocator.alloc(SparseT, capacity_dense),
-                    .sparse_to_dense = try allocator.alloc(DenseT, capacity_sparse),
+                    .dense_to_sparse = dense_to_sparse,
+                    .sparse_to_dense = sparse_to_dense,
                     .values = {},
                     .capacity_dense = capacity_dense,
                     .capacity_sparse = capacity_sparse,
