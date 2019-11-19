@@ -1,6 +1,9 @@
 //! Sparse Set
-//! Version 1.0.1
+//!
+//! Version 1.0.2
+//!
 //! See https://github.com/Srekel/zig-sparse-set for latest version and documentation.
+//!
 //! See unit tests for usage examples.
 //!
 //! Dual license: Unlicense / MIT
@@ -293,9 +296,9 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
         pub fn removeWithInfo(self: *Self, sparse: SparseT, dense_old: *DenseT, dense_new: *DenseT) void {
             assert(self.dense_count > 0);
             assert(self.hasSparse(sparse));
-            var last_dense = self.dense_count - 1;
-            var last_sparse = self.dense_to_sparse[last_dense];
-            var dense = self.sparse_to_dense[sparse];
+            const last_dense = self.dense_count - 1;
+            const last_sparse = self.dense_to_sparse[last_dense];
+            const dense = self.sparse_to_dense[sparse];
             self.dense_to_sparse[dense] = last_sparse;
             self.sparse_to_dense[last_sparse] = dense;
             if (value_layout == .InternalArrayOfStructs) {
@@ -324,9 +327,9 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
         pub fn remove(self: *Self, sparse: SparseT) void {
             assert(self.dense_count > 0);
             assert(self.hasSparse(sparse));
-            var last_dense = self.dense_count - 1;
-            var last_sparse = self.dense_to_sparse[last_dense];
-            var dense = self.sparse_to_dense[sparse];
+            const last_dense = self.dense_count - 1;
+            const last_sparse = self.dense_to_sparse[last_dense];
+            const dense = self.sparse_to_dense[sparse];
             self.dense_to_sparse[dense] = last_sparse;
             self.sparse_to_dense[last_sparse] = dense;
             if (value_layout == .InternalArrayOfStructs) {
@@ -352,9 +355,10 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
         /// Returns true if the sparse is registered to a dense index.
         pub fn hasSparse(self: Self, sparse: SparseT) bool {
             // Unsure if this call to disable runtime safety is needed - can add later if so.
+            // Related: https://github.com/ziglang/zig/issues/978
             // @setRuntimeSafety(false);
             assert(sparse < self.capacity_sparse);
-            var dense = self.sparse_to_dense[sparse];
+            const dense = self.sparse_to_dense[sparse];
             return dense < self.dense_count and self.dense_to_sparse[dense] == sparse;
         }
 
@@ -399,7 +403,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
                 /// Returns a pointer to the SOA value corresponding to the sparse parameter.
                 pub fn getValueBySparse(self: Self, sparse: SparseT) *ValueT {
                     assert(self.hasSparse(sparse));
-                    var dense = self.sparse_to_dense[sparse];
+                    const dense = self.sparse_to_dense[sparse];
                     return &self.values[dense];
                 }
 
