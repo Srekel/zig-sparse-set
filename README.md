@@ -177,6 +177,47 @@ Pick your license: Public Domain (Unlicense) or MIT.
 
 See `src/test.zig`.
 
+Here is the "unit test" that is used for generating documentation, it uses all of the functionality:
+
+```zig
+test "docs" {
+    const Entity = u32;
+    const DenseT = u8;
+    const DocValueT = i32;
+    const DocsSparseSet = SparseSet(.{
+        .SparseT = Entity,
+        .DenseT = DenseT,
+        .ValueT = DocValueT,
+        .allow_resize = .NoResize,
+        .value_layout = ValueLayout{ .InternalArrayOfStructs = .{ .ValueT = DocValueT } },
+    });
+
+    var ss = DocsSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
+    defer (ss.deinit());
+
+    var ent1: Entity = 1;
+    var ent2: Entity = 2;
+    _ = try ss.addOrError(ent1);
+    _ = try ss.addValueOrError(ent2, 2);
+    std.testing.expectEqual(@as(DenseT, 2), ss.len());
+    try ss.removeOrError(ent1);
+    var old: DenseT = undefined;
+    var new: DenseT = undefined;
+    try ss.removeWithInfoOrError(ent2, &old, &new);
+    _ = ss.toSparseSlice();
+    _ = ss.toValueSlice();
+    std.testing.expectEqual(@as(DenseT, 0), ss.len());
+    ss.clear();
+    std.testing.expectEqual(@as(DenseT, 8), ss.remainingCapacity());
+
+    _ = try ss.addValueOrError(ent1, 10);
+    std.testing.expectEqual(@as(DenseT, 0), try ss.getBySparseOrError(ent1));
+    std.testing.expectEqual(@as(DocValueT, 10), (try ss.getValueBySparseOrError(ent1)).*);
+    std.testing.expectEqual(@as(Entity, ent1), try ss.getByDenseOrError(0));
+    std.testing.expectEqual(@as(DocValueT, 10), (try ss.getValueByDenseOrError(0)).*);
+}
+```
+
 ## :paperclip: References :paperclip:
 
 * [incrediblejr's](https://gist.github.com/incrediblejr) C implementation [ijss](https://gist.github.com/incrediblejr/931efb7587e1ab328fa65ecc94d1009f).
