@@ -128,8 +128,8 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
                 };
             }
 
-            // Ensure Valgrind doesn't complain
-            // std.valgrind.memcheck.makeMemDefined(std.mem.asBytes(&self.sparse_to_dense));
+            // Ensure Valgrind doesn't complain about hasSparse
+            _ = std.valgrind.memcheck.makeMemDefined(std.mem.asBytes(&self.sparse_to_dense));
 
             return self;
         }
