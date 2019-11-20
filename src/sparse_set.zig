@@ -90,7 +90,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
         /// Amount of dense indices that can be stored.
         capacity_dense: DenseT,
 
-        /// Amount of sparse handles can be used for lookups.
+        /// Amount of sparse handles that can be used for lookups.
         capacity_sparse: SparseT,
 
         /// You can think of **capacity_sparse** as how many entities you want to support, and
@@ -101,14 +101,14 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             assert(capacity_dense < capacity_sparse);
 
             var dense_to_sparse = try allocator.alloc(SparseT, capacity_dense);
-            errdefer (allocator.free(dense_to_sparse));
+            errdefer allocator.free(dense_to_sparse);
             var sparse_to_dense = try allocator.alloc(DenseT, capacity_sparse);
-            errdefer (allocator.free(sparse_to_dense));
+            errdefer allocator.free(sparse_to_dense);
 
             var self: Self = undefined;
             if (value_layout == .InternalArrayOfStructs) {
                 var values = try allocator.alloc(ValueT, capacity_dense);
-                errdefer (allocator.free(values));
+                errdefer allocator.free(values);
 
                 self = Self{
                     .allocator = allocator,
@@ -445,7 +445,7 @@ test "docs" {
     });
 
     var ss = DocsSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
-    defer (ss.deinit());
+    defer ss.deinit();
 
     var ent1: Entity = 1;
     var ent2: Entity = 2;

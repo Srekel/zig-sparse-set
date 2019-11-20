@@ -175,7 +175,7 @@ Pick your license: Public Domain (Unlicense) or MIT.
 
 ## :statue_of_liberty: Examples :statue_of_liberty:
 
-See `src/test.zig`.
+See `src/test.zig`. Especially the MyPositionSystem ones.
 
 Here is the "unit test" that is used for generating documentation, it uses all of the functionality:
 
@@ -189,11 +189,11 @@ test "docs" {
         .DenseT = DenseT,
         .ValueT = DocValueT,
         .allow_resize = .NoResize,
-        .value_layout = ValueLayout{ .InternalArrayOfStructs = .{ .ValueT = DocValueT } },
+        .value_layout = .InternalArrayOfStructs,
     });
 
     var ss = DocsSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
-    defer (ss.deinit());
+    defer ss.deinit();
 
     var ent1: Entity = 1;
     var ent2: Entity = 2;

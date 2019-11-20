@@ -63,7 +63,7 @@ test "init safe" {
 
 test "add / remove safe 1" {
     var ss = DefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
-    defer (ss.deinit());
+    defer ss.deinit();
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
         var usparse = @intCast(Entity, sparse) + 10;
@@ -82,7 +82,7 @@ test "add / remove safe 1" {
 
 test "add / remove safe 2" {
     var ss = DefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
-    defer (ss.deinit());
+    defer ss.deinit();
 
     testing.expect(!(ss.hasSparse(1)));
     testing.expectEqual(@intCast(DenseT, 0), ss.add(1));
@@ -94,7 +94,7 @@ test "add / remove safe 2" {
 
 test "add / remove safe 3" {
     var ss = DefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
-    defer (ss.deinit());
+    defer ss.deinit();
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
         var usparse = @intCast(Entity, sparse) + 10;
@@ -114,7 +114,7 @@ test "add / remove safe 3" {
 
 test "AOS" {
     var ss = DefaultTestAOSSimpleSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
-    defer (ss.deinit());
+    defer ss.deinit();
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
         var usparse = @intCast(Entity, sparse) + 10;
@@ -135,7 +135,7 @@ test "AOS" {
 
 test "AOS system" {
     var sys = MyPositionSystemAOS.init();
-    defer (sys.deinit());
+    defer sys.deinit();
 
     var ent1: Entity = 10;
     var ent2: Entity = 20;
@@ -161,7 +161,7 @@ test "AOS system" {
 
 test "SOA system" {
     var sys = MyPositionSystemSOA.init();
-    defer (sys.deinit());
+    defer sys.deinit();
 
     var ent1: Entity = 10;
     var ent2: Entity = 20;
@@ -184,7 +184,7 @@ test "SOA system" {
 
 test "SOA resize true" {
     var ss = ResizableDefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
-    defer (ss.deinit());
+    defer ss.deinit();
 
     testing.expectError(error.OutOfBounds, ss.hasSparseOrError(500));
 
@@ -214,7 +214,7 @@ test "SOA resize true" {
 
 test "AOS resize true" {
     var ss = DefaultTestAOSVec3ResizableSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
-    defer (ss.deinit());
+    defer ss.deinit();
 
     testing.expectError(error.OutOfBounds, ss.hasSparseOrError(500));
 
