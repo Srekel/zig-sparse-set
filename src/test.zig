@@ -51,7 +51,7 @@ const DefaultTestAOSVec3ResizableSparseSet = SparseSet(.{
 });
 
 test "init safe" {
-    var ss = DefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = DefaultTestSparseSet.init(std.testing.allocator, 128, 8) catch unreachable;
     testing.expectEqual(@intCast(DenseT, 0), ss.len());
     for (ss.sparse_to_dense) |dense_undefined, sparse| {
         var usparse = @intCast(Entity, sparse);
@@ -62,7 +62,7 @@ test "init safe" {
 }
 
 test "add / remove safe 1" {
-    var ss = DefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = DefaultTestSparseSet.init(std.testing.allocator, 128, 8) catch unreachable;
     defer ss.deinit();
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
@@ -81,7 +81,7 @@ test "add / remove safe 1" {
 }
 
 test "add / remove safe 2" {
-    var ss = DefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = DefaultTestSparseSet.init(std.testing.allocator, 128, 8) catch unreachable;
     defer ss.deinit();
 
     testing.expect(!(ss.hasSparse(1)));
@@ -93,7 +93,7 @@ test "add / remove safe 2" {
 }
 
 test "add / remove safe 3" {
-    var ss = DefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = DefaultTestSparseSet.init(std.testing.allocator, 128, 8) catch unreachable;
     defer ss.deinit();
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
@@ -113,7 +113,7 @@ test "add / remove safe 3" {
 }
 
 test "AOS" {
-    var ss = DefaultTestAOSSimpleSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = DefaultTestAOSSimpleSparseSet.init(std.testing.allocator, 128, 8) catch unreachable;
     defer ss.deinit();
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
@@ -183,7 +183,7 @@ test "SOA system" {
 }
 
 test "SOA resize true" {
-    var ss = ResizableDefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = ResizableDefaultTestSparseSet.init(std.testing.allocator, 128, 8) catch unreachable;
     defer ss.deinit();
 
     testing.expectError(error.OutOfBounds, ss.hasSparseOrError(500));
@@ -213,7 +213,7 @@ test "SOA resize true" {
 }
 
 test "AOS resize true" {
-    var ss = DefaultTestAOSVec3ResizableSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = DefaultTestAOSVec3ResizableSparseSet.init(std.testing.allocator, 128, 8) catch unreachable;
     defer ss.deinit();
 
     testing.expectError(error.OutOfBounds, ss.hasSparseOrError(500));
@@ -251,7 +251,7 @@ const MyPositionSystemAOS = struct {
 
     pub fn init() MyPositionSystemAOS {
         return Self{
-            .component_set = DefaultTestAOSSystemSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable,
+            .component_set = DefaultTestAOSSystemSparseSet.init(std.testing.allocator, 128, 8) catch unreachable,
         };
     }
 
@@ -287,7 +287,7 @@ const MyPositionSystemSOA = struct {
 
     pub fn init() MyPositionSystemSOA {
         return Self{
-            .component_set = DefaultTestSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable,
+            .component_set = DefaultTestSparseSet.init(std.testing.allocator, 128, 8) catch unreachable,
         };
     }
 

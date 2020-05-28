@@ -67,7 +67,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
     comptime const allow_resize = config.allow_resize;
     comptime const value_layout = config.value_layout;
     comptime const value_init = config.value_init;
-    assert((value_layout == .ExternalStructOfArraysSupport) or (ValueT != @typeOf(void)));
+    assert((value_layout == .ExternalStructOfArraysSupport) or (ValueT != @TypeOf(void)));
 
     return struct {
         const Self = @This();
@@ -444,7 +444,7 @@ test "docs" {
         .value_layout = .InternalArrayOfStructs,
     });
 
-    var ss = DocsSparseSet.init(std.debug.global_allocator, 128, 8) catch unreachable;
+    var ss = DocsSparseSet.init(std.testing.allocator, 128, 8) catch unreachable;
     defer ss.deinit();
 
     var ent1: Entity = 1;
