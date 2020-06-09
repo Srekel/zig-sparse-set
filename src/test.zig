@@ -48,6 +48,7 @@ const DefaultTestAOSVec3ResizableSparseSet = SparseSet(.{
     .ValueT = Vec3,
     .allow_resize = .ResizeAllowed,
     .value_layout = .InternalArrayOfStructs,
+    .value_init = .ZeroInitialized,
 });
 
 test "init safe" {

@@ -200,7 +200,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             self.dense_to_sparse[self.dense_count] = sparse;
             self.sparse_to_dense[sparse] = self.dense_count;
             if (value_layout == .InternalArrayOfStructs and value_init == .ZeroInitialized) {
-                std.mem.set(u8, std.mem.asBytes(&self.values[self.dense_count]), 0);
+                self.values[self.dense_count] = mem.zeroes(ValueT);
             }
 
             self.dense_count += 1;
