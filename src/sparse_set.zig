@@ -61,19 +61,19 @@ pub const SparseSetConfig = struct {
 
 /// Creates a specific Sparse Set type based on the config.
 pub fn SparseSet(comptime config: SparseSetConfig) type {
-    comptime const SparseT = config.SparseT;
-    comptime const DenseT = config.DenseT;
-    comptime const ValueT = config.ValueT;
-    comptime const allow_resize = config.allow_resize;
-    comptime const value_layout = config.value_layout;
-    comptime const value_init = config.value_init;
+    const SparseT = config.SparseT;
+    const DenseT = config.DenseT;
+    const ValueT = config.ValueT;
+    const allow_resize = config.allow_resize;
+    const value_layout = config.value_layout;
+    const value_init = config.value_init;
     assert((value_layout == .ExternalStructOfArraysSupport) or (ValueT != @TypeOf(void)));
 
     return struct {
         const Self = @This();
 
         /// Allocator used for allocating, growing and freeing **dense_to_sparse**, **sparse_to_dense**, and **values**.
-        allocator: *Allocator,
+        allocator: Allocator,
 
         /// Mapping from dense indices to sparse handles.
         dense_to_sparse: []SparseT,
@@ -95,7 +95,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
 
         /// You can think of **capacity_sparse** as how many entities you want to support, and
         /// **capacity_dense** as how many components.
-        pub fn init(allocator: *Allocator, capacity_sparse: SparseT, capacity_dense: DenseT) !Self {
+        pub fn init(allocator: Allocator, capacity_sparse: SparseT, capacity_dense: DenseT) !Self {
             // Could be <= but I'm not sure why'd you use a sparse_set if you don't have more sparse
             // indices than dense...
             assert(capacity_dense < capacity_sparse);
@@ -200,7 +200,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             self.dense_to_sparse[self.dense_count] = sparse;
             self.sparse_to_dense[sparse] = self.dense_count;
             if (value_layout == .InternalArrayOfStructs and value_init == .ZeroInitialized) {
-                self.values[self.dense_count] = mem.zeroes(ValueT);
+                self.values[self.dense_count] = std.mem.zeroes(ValueT);
             }
 
             self.dense_count += 1;
@@ -451,20 +451,20 @@ test "docs" {
     var ent2: Entity = 2;
     _ = try ss.addOrError(ent1);
     _ = try ss.addValueOrError(ent2, 2);
-    std.testing.expectEqual(@as(DenseT, 2), ss.len());
+    try std.testing.expectEqual(@as(DenseT, 2), ss.len());
     try ss.removeOrError(ent1);
     var old: DenseT = undefined;
     var new: DenseT = undefined;
     try ss.removeWithInfoOrError(ent2, &old, &new);
     _ = ss.toSparseSlice();
     _ = ss.toValueSlice();
-    std.testing.expectEqual(@as(DenseT, 0), ss.len());
+    try std.testing.expectEqual(@as(DenseT, 0), ss.len());
     ss.clear();
-    std.testing.expectEqual(@as(DenseT, 8), ss.remainingCapacity());
+    try std.testing.expectEqual(@as(DenseT, 8), ss.remainingCapacity());
 
     _ = try ss.addValueOrError(ent1, 10);
-    std.testing.expectEqual(@as(DenseT, 0), try ss.getBySparseOrError(ent1));
-    std.testing.expectEqual(@as(DocValueT, 10), (try ss.getValueBySparseOrError(ent1)).*);
-    std.testing.expectEqual(@as(Entity, ent1), try ss.getByDenseOrError(0));
-    std.testing.expectEqual(@as(DocValueT, 10), (try ss.getValueByDenseOrError(0)).*);
+    try std.testing.expectEqual(@as(DenseT, 0), try ss.getBySparseOrError(ent1));
+    try std.testing.expectEqual(@as(DocValueT, 10), (try ss.getValueBySparseOrError(ent1)).*);
+    try std.testing.expectEqual(@as(Entity, ent1), try ss.getByDenseOrError(0));
+    try std.testing.expectEqual(@as(DocValueT, 10), (try ss.getValueByDenseOrError(0)).*);
 }
