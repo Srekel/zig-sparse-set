@@ -1,7 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const testing = std.testing;
-usingnamespace @import("sparse_set.zig");
+const SparseSet = @import("sparse_set.zig").SparseSet;
 
 const Entity = u32;
 const DenseT = u8;
@@ -53,12 +53,13 @@ const DefaultTestAOSVec3ResizableSparseSet = SparseSet(.{
 
 test "init safe" {
     var ss = DefaultTestSparseSet.init(std.testing.allocator, 128, 8) catch unreachable;
-    testing.expectEqual(@intCast(DenseT, 0), ss.len());
+    try testing.expectEqual(@intCast(DenseT, 0), ss.len());
     for (ss.sparse_to_dense) |dense_undefined, sparse| {
+        _ = dense_undefined;
         var usparse = @intCast(Entity, sparse);
-        testing.expect(!(ss.hasSparse(usparse)));
+        try testing.expect(!(ss.hasSparse(usparse)));
     }
-    testing.expectEqual(@intCast(DenseT, 0), ss.len());
+    try testing.expectEqual(@intCast(DenseT, 0), ss.len());
     ss.deinit();
 }
 
@@ -67,30 +68,31 @@ test "add / remove safe 1" {
     defer ss.deinit();
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
+        _ = sparse_undefined;
         var usparse = @intCast(Entity, sparse) + 10;
         var dense_new = ss.add(usparse);
-        testing.expectEqual(@intCast(DenseT, sparse), dense_new);
-        testing.expect(ss.hasSparse(usparse));
-        testing.expectEqual(dense_new, ss.getBySparse(usparse));
-        testing.expectEqual(usparse, ss.getByDense(dense_new));
+        try testing.expectEqual(@intCast(DenseT, sparse), dense_new);
+        try testing.expect(ss.hasSparse(usparse));
+        try testing.expectEqual(dense_new, ss.getBySparse(usparse));
+        try testing.expectEqual(usparse, ss.getByDense(dense_new));
     }
-    testing.expectError(error.OutOfBounds, ss.addOrError(1));
-    testing.expectEqual(@intCast(DenseT, 0), ss.remainingCapacity());
+    try testing.expectError(error.OutOfBounds, ss.addOrError(1));
+    try testing.expectEqual(@intCast(DenseT, 0), ss.remainingCapacity());
 
     ss.clear();
-    testing.expect(!(ss.hasSparse(1)));
+    try testing.expect(!(ss.hasSparse(1)));
 }
 
 test "add / remove safe 2" {
     var ss = DefaultTestSparseSet.init(std.testing.allocator, 128, 8) catch unreachable;
     defer ss.deinit();
 
-    testing.expect(!(ss.hasSparse(1)));
-    testing.expectEqual(@intCast(DenseT, 0), ss.add(1));
-    testing.expect(ss.hasSparse(1));
-    testing.expectError(error.AlreadyRegistered, ss.addOrError(1));
+    try testing.expect(!(ss.hasSparse(1)));
+    try testing.expectEqual(@intCast(DenseT, 0), ss.add(1));
+    try testing.expect(ss.hasSparse(1));
+    try testing.expectError(error.AlreadyRegistered, ss.addOrError(1));
     ss.remove(1);
-    testing.expect(!(ss.hasSparse(1)));
+    try testing.expect(!(ss.hasSparse(1)));
 }
 
 test "add / remove safe 3" {
@@ -98,19 +100,20 @@ test "add / remove safe 3" {
     defer ss.deinit();
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
+        _ = sparse_undefined;
         var usparse = @intCast(Entity, sparse) + 10;
         _ = ss.add(usparse);
     }
 
-    testing.expectEqual(@intCast(DenseT, 0), ss.remainingCapacity());
-    testing.expect(!(ss.hasSparse(5)));
-    testing.expect(ss.hasSparse(15));
+    try testing.expectEqual(@intCast(DenseT, 0), ss.remainingCapacity());
+    try testing.expect(!(ss.hasSparse(5)));
+    try testing.expect(ss.hasSparse(15));
     ss.remove(15);
-    testing.expect(!(ss.hasSparse(15)));
-    testing.expectEqual(@intCast(DenseT, 1), ss.remainingCapacity());
+    try testing.expect(!(ss.hasSparse(15)));
+    try testing.expectEqual(@intCast(DenseT, 1), ss.remainingCapacity());
     _ = ss.add(15);
-    testing.expect(ss.hasSparse(15));
-    testing.expectEqual(@intCast(DenseT, 0), ss.remainingCapacity());
+    try testing.expect(ss.hasSparse(15));
+    try testing.expectEqual(@intCast(DenseT, 0), ss.remainingCapacity());
 }
 
 test "AOS" {
@@ -118,20 +121,21 @@ test "AOS" {
     defer ss.deinit();
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
+        _ = sparse_undefined;
         var usparse = @intCast(Entity, sparse) + 10;
         var value = -@intCast(i32, sparse);
         var dense_new = ss.addValue(usparse, value);
-        testing.expectEqual(@intCast(DenseT, sparse), dense_new);
-        testing.expect(ss.hasSparse(usparse));
-        testing.expectEqual(dense_new, ss.getBySparse(usparse));
-        testing.expectEqual(usparse, ss.getByDense(dense_new));
-        testing.expectEqual(value, (ss.getValueByDense(dense_new)).*);
-        testing.expectEqual(value, ss.getValueBySparse(usparse).*);
+        try testing.expectEqual(@intCast(DenseT, sparse), dense_new);
+        try testing.expect(ss.hasSparse(usparse));
+        try testing.expectEqual(dense_new, ss.getBySparse(usparse));
+        try testing.expectEqual(usparse, ss.getByDense(dense_new));
+        try testing.expectEqual(value, (ss.getValueByDense(dense_new)).*);
+        try testing.expectEqual(value, ss.getValueBySparse(usparse).*);
     }
-    testing.expectEqual(@intCast(DenseT, 0), ss.remainingCapacity());
+    try testing.expectEqual(@intCast(DenseT, 0), ss.remainingCapacity());
 
     ss.clear();
-    testing.expect(!ss.hasSparse(1));
+    try testing.expect(!ss.hasSparse(1));
 }
 
 test "AOS system" {
@@ -144,20 +148,20 @@ test "AOS system" {
     var v2 = Vec3{ .x = 20, .y = 0, .z = 0 };
     sys.addComp(ent1, v1);
     sys.addComp(ent2, v2);
-    testing.expectEqual(v1, sys.getComp(ent1));
-    testing.expectEqual(v2, sys.getComp(ent2));
-    testing.expectEqual(v1, sys.component_set.values[0]);
-    testing.expectEqual(v2, sys.component_set.values[1]);
-    testing.expectEqual(@as(DenseT, 0), sys.component_set.getBySparse(ent1));
-    testing.expectEqual(@as(DenseT, 1), sys.component_set.getBySparse(ent2));
+    try testing.expectEqual(v1, sys.getComp(ent1));
+    try testing.expectEqual(v2, sys.getComp(ent2));
+    try testing.expectEqual(v1, sys.component_set.values[0]);
+    try testing.expectEqual(v2, sys.component_set.values[1]);
+    try testing.expectEqual(@as(DenseT, 0), sys.component_set.getBySparse(ent1));
+    try testing.expectEqual(@as(DenseT, 1), sys.component_set.getBySparse(ent2));
 
     sys.removeComp(ent1);
-    testing.expectEqual(v2, sys.getComp(ent2));
-    testing.expectEqual(v2, sys.component_set.values[0]);
-    testing.expectEqual(@as(DenseT, 0), sys.component_set.getBySparse(ent2));
+    try testing.expectEqual(v2, sys.getComp(ent2));
+    try testing.expectEqual(v2, sys.component_set.values[0]);
+    try testing.expectEqual(@as(DenseT, 0), sys.component_set.getBySparse(ent2));
 
     sys.updateComps();
-    testing.expectEqual(Vec3{ .x = 23, .y = 0, .z = 0 }, sys.getComp(ent2));
+    try testing.expectEqual(Vec3{ .x = 23, .y = 0, .z = 0 }, sys.getComp(ent2));
 }
 
 test "SOA system" {
@@ -170,80 +174,82 @@ test "SOA system" {
     var v2 = Vec3{ .x = 20, .y = 0, .z = 0 };
     sys.addComp(ent1, v1);
     sys.addComp(ent2, v2);
-    testing.expectEqual(v1, sys.getComp(ent1));
-    testing.expectEqual(v2, sys.getComp(ent2));
-    testing.expectEqual(@as(DenseT, 0), sys.component_set.getBySparse(ent1));
-    testing.expectEqual(@as(DenseT, 1), sys.component_set.getBySparse(ent2));
+    try testing.expectEqual(v1, sys.getComp(ent1));
+    try testing.expectEqual(v2, sys.getComp(ent2));
+    try testing.expectEqual(@as(DenseT, 0), sys.component_set.getBySparse(ent1));
+    try testing.expectEqual(@as(DenseT, 1), sys.component_set.getBySparse(ent2));
 
     sys.removeComp(ent1);
-    testing.expectEqual(v2, sys.getComp(ent2));
-    testing.expectEqual(@as(DenseT, 0), sys.component_set.getBySparse(ent2));
+    try testing.expectEqual(v2, sys.getComp(ent2));
+    try testing.expectEqual(@as(DenseT, 0), sys.component_set.getBySparse(ent2));
 
     sys.updateComps();
-    testing.expectEqual(Vec3{ .x = 23, .y = 0, .z = 0 }, sys.getComp(ent2));
+    try testing.expectEqual(Vec3{ .x = 23, .y = 0, .z = 0 }, sys.getComp(ent2));
 }
 
 test "SOA resize true" {
     var ss = ResizableDefaultTestSparseSet.init(std.testing.allocator, 128, 8) catch unreachable;
     defer ss.deinit();
 
-    testing.expectError(error.OutOfBounds, ss.hasSparseOrError(500));
+    try testing.expectError(error.OutOfBounds, ss.hasSparseOrError(500));
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
+        _ = sparse_undefined;
         var usparse = @intCast(Entity, sparse) + 10;
-        var dense_new = ss.add(usparse);
-        testing.expect(ss.hasSparse(usparse));
+        _ = ss.add(usparse);
+        try testing.expect(ss.hasSparse(usparse));
     }
 
-    testing.expect(!ss.hasSparse(18));
-    testing.expectEqual(@intCast(DenseT, 8), ss.add(18));
-    testing.expect(ss.hasSparse(18));
-    testing.expect(!ss.hasSparse(19));
-    testing.expectEqual(@intCast(u32, 16), @intCast(u32, ss.dense_to_sparse.len));
-    testing.expectEqual(@intCast(DenseT, 7), ss.remainingCapacity());
-    testing.expectEqual(@intCast(Entity, 10), ss.dense_to_sparse[0]);
-    testing.expectEqual(@intCast(Entity, 11), ss.dense_to_sparse[1]);
-    testing.expectEqual(@intCast(Entity, 12), ss.dense_to_sparse[2]);
-    testing.expectEqual(@intCast(Entity, 13), ss.dense_to_sparse[3]);
-    testing.expectEqual(@intCast(Entity, 16), ss.dense_to_sparse[6]);
-    testing.expectEqual(@intCast(Entity, 17), ss.dense_to_sparse[7]);
-    testing.expectEqual(@intCast(Entity, 18), ss.dense_to_sparse[8]);
+    try testing.expect(!ss.hasSparse(18));
+    try testing.expectEqual(@intCast(DenseT, 8), ss.add(18));
+    try testing.expect(ss.hasSparse(18));
+    try testing.expect(!ss.hasSparse(19));
+    try testing.expectEqual(@intCast(u32, 16), @intCast(u32, ss.dense_to_sparse.len));
+    try testing.expectEqual(@intCast(DenseT, 7), ss.remainingCapacity());
+    try testing.expectEqual(@intCast(Entity, 10), ss.dense_to_sparse[0]);
+    try testing.expectEqual(@intCast(Entity, 11), ss.dense_to_sparse[1]);
+    try testing.expectEqual(@intCast(Entity, 12), ss.dense_to_sparse[2]);
+    try testing.expectEqual(@intCast(Entity, 13), ss.dense_to_sparse[3]);
+    try testing.expectEqual(@intCast(Entity, 16), ss.dense_to_sparse[6]);
+    try testing.expectEqual(@intCast(Entity, 17), ss.dense_to_sparse[7]);
+    try testing.expectEqual(@intCast(Entity, 18), ss.dense_to_sparse[8]);
 
     ss.clear();
-    testing.expect(!(ss.hasSparse(1)));
+    try testing.expect(!(ss.hasSparse(1)));
 }
 
 test "AOS resize true" {
     var ss = DefaultTestAOSVec3ResizableSparseSet.init(std.testing.allocator, 128, 8) catch unreachable;
     defer ss.deinit();
 
-    testing.expectError(error.OutOfBounds, ss.hasSparseOrError(500));
+    try testing.expectError(error.OutOfBounds, ss.hasSparseOrError(500));
 
     for (ss.dense_to_sparse) |sparse_undefined, sparse| {
+        _ = sparse_undefined;
         var usparse = @intCast(Entity, sparse) + 10;
         var value = Vec3{ .x = @intToFloat(f32, sparse), .y = 0, .z = 0 };
-        var dense_new = ss.addValue(usparse, value);
-        testing.expect(ss.hasSparse(usparse));
-        testing.expectEqual(value, ss.getValueBySparse(usparse).*);
+        _ = ss.addValue(usparse, value);
+        try testing.expect(ss.hasSparse(usparse));
+        try testing.expectEqual(value, ss.getValueBySparse(usparse).*);
     }
 
-    testing.expect(!ss.hasSparse(18));
-    testing.expectEqual(@intCast(DenseT, 8), ss.addValue(18, Vec3{ .x = 8, .y = 0, .z = 0 }));
-    testing.expect(ss.hasSparse(18));
-    testing.expect(!ss.hasSparse(19));
-    testing.expectEqual(@intCast(DenseT, 7), ss.remainingCapacity());
-    testing.expectEqual(Vec3{ .x = 0, .y = 0, .z = 0 }, ss.getValueBySparse(10).*);
-    testing.expectEqual(Vec3{ .x = 1, .y = 0, .z = 0 }, ss.getValueBySparse(11).*);
-    testing.expectEqual(Vec3{ .x = 2, .y = 0, .z = 0 }, ss.getValueBySparse(12).*);
-    testing.expectEqual(Vec3{ .x = 3, .y = 0, .z = 0 }, ss.getValueBySparse(13).*);
-    testing.expectEqual(Vec3{ .x = 4, .y = 0, .z = 0 }, ss.getValueBySparse(14).*);
-    testing.expectEqual(Vec3{ .x = 5, .y = 0, .z = 0 }, ss.getValueBySparse(15).*);
-    testing.expectEqual(Vec3{ .x = 6, .y = 0, .z = 0 }, ss.getValueBySparse(16).*);
-    testing.expectEqual(Vec3{ .x = 7, .y = 0, .z = 0 }, ss.getValueBySparse(17).*);
-    testing.expectEqual(Vec3{ .x = 8, .y = 0, .z = 0 }, ss.getValueBySparse(18).*);
+    try testing.expect(!ss.hasSparse(18));
+    try testing.expectEqual(@intCast(DenseT, 8), ss.addValue(18, Vec3{ .x = 8, .y = 0, .z = 0 }));
+    try testing.expect(ss.hasSparse(18));
+    try testing.expect(!ss.hasSparse(19));
+    try testing.expectEqual(@intCast(DenseT, 7), ss.remainingCapacity());
+    try testing.expectEqual(Vec3{ .x = 0, .y = 0, .z = 0 }, ss.getValueBySparse(10).*);
+    try testing.expectEqual(Vec3{ .x = 1, .y = 0, .z = 0 }, ss.getValueBySparse(11).*);
+    try testing.expectEqual(Vec3{ .x = 2, .y = 0, .z = 0 }, ss.getValueBySparse(12).*);
+    try testing.expectEqual(Vec3{ .x = 3, .y = 0, .z = 0 }, ss.getValueBySparse(13).*);
+    try testing.expectEqual(Vec3{ .x = 4, .y = 0, .z = 0 }, ss.getValueBySparse(14).*);
+    try testing.expectEqual(Vec3{ .x = 5, .y = 0, .z = 0 }, ss.getValueBySparse(15).*);
+    try testing.expectEqual(Vec3{ .x = 6, .y = 0, .z = 0 }, ss.getValueBySparse(16).*);
+    try testing.expectEqual(Vec3{ .x = 7, .y = 0, .z = 0 }, ss.getValueBySparse(17).*);
+    try testing.expectEqual(Vec3{ .x = 8, .y = 0, .z = 0 }, ss.getValueBySparse(18).*);
 
     ss.clear();
-    testing.expect(!(ss.hasSparse(1)));
+    try testing.expect(!(ss.hasSparse(1)));
 }
 
 const MyPositionSystemAOS = struct {
@@ -273,7 +279,7 @@ const MyPositionSystemAOS = struct {
     }
 
     pub fn updateComps(self: Self) void {
-        for (self.component_set.toValueSlice()) |*value, dense| {
+        for (self.component_set.toValueSlice()) |*value| {
             value.x += 3;
         }
     }
@@ -319,6 +325,7 @@ const MyPositionSystemSOA = struct {
 
     pub fn updateComps(self: *Self) void {
         for (self.component_set.toSparseSlice()) |ent, dense| {
+            _ = ent;
             self.xs[dense] += 3;
         }
     }
