@@ -71,6 +71,8 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
 
     return struct {
         const Self = @This();
+        pub const SparseCapacityT = std.math.IntFittingRange(0, std.math.maxInt(SparseT) + 1);
+        pub const DenseCapacityT = std.math.IntFittingRange(0, std.math.maxInt(DenseT) + 1);
 
         /// Allocator used for allocating, growing and freeing **dense_to_sparse**, **sparse_to_dense**, and **values**.
         allocator: Allocator,
@@ -85,17 +87,21 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
         values: if (value_layout == .InternalArrayOfStructs) []ValueT else void,
 
         /// Current amount of used handles.
-        dense_count: DenseT,
+        dense_count: DenseCapacityT,
 
         /// Amount of dense indices that can be stored.
-        capacity_dense: DenseT,
+        capacity_dense: DenseCapacityT,
 
         /// Amount of sparse handles that can be used for lookups.
-        capacity_sparse: SparseT,
+        capacity_sparse: SparseCapacityT,
 
         /// You can think of **capacity_sparse** as how many entities you want to support, and
         /// **capacity_dense** as how many components.
-        pub fn init(allocator: Allocator, capacity_sparse: SparseT, capacity_dense: DenseT) !Self {
+        pub fn init(
+            allocator: Allocator,
+            capacity_sparse: SparseCapacityT,
+            capacity_dense: DenseCapacityT,
+        ) !Self {
             // Could be <= but I'm not sure why'd you use a sparse_set if you don't have more sparse
             // indices than dense...
             assert(capacity_dense < capacity_sparse);
@@ -152,7 +158,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
         }
 
         /// Returns the amount of allocated handles.
-        pub fn len(self: Self) DenseT {
+        pub fn len(self: Self) DenseCapacityT {
             return self.dense_count;
         }
 
@@ -174,7 +180,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
         };
 
         /// Returns how many dense indices are still available
-        pub fn remainingCapacity(self: Self) DenseT {
+        pub fn remainingCapacity(self: Self) DenseCapacityT {
             return self.capacity_dense - self.dense_count;
         }
 
@@ -198,13 +204,13 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             assert(self.dense_count < self.capacity_dense);
             assert(!self.hasSparse(sparse));
             self.dense_to_sparse[self.dense_count] = sparse;
-            self.sparse_to_dense[sparse] = self.dense_count;
+            self.sparse_to_dense[sparse] = @intCast(DenseT, self.dense_count);
             if (value_layout == .InternalArrayOfStructs and value_init == .ZeroInitialized) {
                 self.values[self.dense_count] = std.mem.zeroes(ValueT);
             }
 
             self.dense_count += 1;
-            return self.dense_count - 1;
+            return @intCast(DenseT, self.dense_count - 1);
         }
 
         /// May return error.OutOfBounds or error.AlreadyRegistered, otherwise calls add.
@@ -256,10 +262,10 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
                     assert(self.dense_count < self.capacity_dense);
                     assert(!self.hasSparse(sparse));
                     self.dense_to_sparse[self.dense_count] = sparse;
-                    self.sparse_to_dense[sparse] = self.dense_count;
+                    self.sparse_to_dense[sparse] = @intCast(DenseT, self.dense_count);
                     self.values[self.dense_count] = value;
                     self.dense_count += 1;
-                    return self.dense_count - 1;
+                    return @intCast(DenseT, self.dense_count - 1);
                 }
 
                 /// May return error.OutOfBounds or error.AlreadyRegistered, otherwise calls add.
@@ -296,7 +302,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
         pub fn removeWithInfo(self: *Self, sparse: SparseT, dense_old: *DenseT, dense_new: *DenseT) void {
             assert(self.dense_count > 0);
             assert(self.hasSparse(sparse));
-            const last_dense = self.dense_count - 1;
+            const last_dense = @intCast(DenseT, self.dense_count - 1);
             const last_sparse = self.dense_to_sparse[last_dense];
             const dense = self.sparse_to_dense[sparse];
             self.dense_to_sparse[dense] = last_sparse;
@@ -379,7 +385,10 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
 
         /// Tries hasSparseOrError, then returns getBySparse.
         pub fn getBySparseOrError(self: Self, sparse: SparseT) !DenseT {
-            _ = try self.hasSparseOrError(sparse);
+            if (!try self.hasSparseOrError(sparse)) {
+                return error.NotRegistered;
+            }
+
             return self.getBySparse(sparse);
         }
 
@@ -409,7 +418,9 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
 
                 /// First tries hasSparse, then returns getValueBySparse().
                 pub fn getValueBySparseOrError(self: Self, sparse: SparseT) !*ValueT {
-                    _ = try self.hasSparseOrError(sparse);
+                    if (!try self.hasSparseOrError(sparse)) {
+                        return error.NotRegistered;
+                    }
                     return self.getValueBySparse(sparse);
                 }
 
@@ -451,16 +462,16 @@ test "docs" {
     var ent2: Entity = 2;
     _ = try ss.addOrError(ent1);
     _ = try ss.addValueOrError(ent2, 2);
-    try std.testing.expectEqual(@as(DenseT, 2), ss.len());
+    try std.testing.expectEqual(@as(DocsSparseSet.DenseCapacityT, 2), ss.len());
     try ss.removeOrError(ent1);
     var old: DenseT = undefined;
     var new: DenseT = undefined;
     try ss.removeWithInfoOrError(ent2, &old, &new);
     _ = ss.toSparseSlice();
     _ = ss.toValueSlice();
-    try std.testing.expectEqual(@as(DenseT, 0), ss.len());
+    try std.testing.expectEqual(@as(DocsSparseSet.DenseCapacityT, 0), ss.len());
     ss.clear();
-    try std.testing.expectEqual(@as(DenseT, 8), ss.remainingCapacity());
+    try std.testing.expectEqual(@as(DocsSparseSet.DenseCapacityT, 8), ss.remainingCapacity());
 
     _ = try ss.addValueOrError(ent1, 10);
     try std.testing.expectEqual(@as(DenseT, 0), try ss.getBySparseOrError(ent1));
