@@ -204,13 +204,13 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             assert(self.dense_count < self.capacity_dense);
             assert(!self.hasSparse(sparse));
             self.dense_to_sparse[self.dense_count] = sparse;
-            self.sparse_to_dense[sparse] = @intCast(DenseT, self.dense_count);
+            self.sparse_to_dense[sparse] = @intCast(self.dense_count);
             if (value_layout == .InternalArrayOfStructs and value_init == .ZeroInitialized) {
                 self.values[self.dense_count] = std.mem.zeroes(ValueT);
             }
 
             self.dense_count += 1;
-            return @intCast(DenseT, self.dense_count - 1);
+            return @intCast(self.dense_count - 1);
         }
 
         /// May return error.OutOfBounds or error.AlreadyRegistered, otherwise calls add.
@@ -262,10 +262,10 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
                     assert(self.dense_count < self.capacity_dense);
                     assert(!self.hasSparse(sparse));
                     self.dense_to_sparse[self.dense_count] = sparse;
-                    self.sparse_to_dense[sparse] = @intCast(DenseT, self.dense_count);
+                    self.sparse_to_dense[sparse] = @intCast(self.dense_count);
                     self.values[self.dense_count] = value;
                     self.dense_count += 1;
-                    return @intCast(DenseT, self.dense_count - 1);
+                    return @intCast(self.dense_count - 1);
                 }
 
                 /// May return error.OutOfBounds or error.AlreadyRegistered, otherwise calls add.
@@ -302,7 +302,7 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
         pub fn removeWithInfo(self: *Self, sparse: SparseT, dense_old: *DenseT, dense_new: *DenseT) void {
             assert(self.dense_count > 0);
             assert(self.hasSparse(sparse));
-            const last_dense = @intCast(DenseT, self.dense_count - 1);
+            const last_dense: DenseT = @intCast(self.dense_count - 1);
             const last_sparse = self.dense_to_sparse[last_dense];
             const dense = self.sparse_to_dense[sparse];
             self.dense_to_sparse[dense] = last_sparse;
