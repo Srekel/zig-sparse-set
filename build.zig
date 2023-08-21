@@ -9,14 +9,15 @@ pub fn build(b: *Builder) void {
     inline for ([_]std.builtin.OptimizeMode{ .Debug, .ReleaseFast, .ReleaseSafe, .ReleaseSmall }) |test_mode| {
         const mode_str = @tagName(test_mode);
         const tests = b.addTest(.{
+            .name = mode_str ++ " ",
             .root_source_file = .{ .path = "src/test.zig" },
             .target = target,
             .optimize = test_mode,
         });
 
-        tests.setNamePrefix(mode_str ++ " ");
+        const run_test_step = b.addRunArtifact(tests);
         const test_step = b.step("test-" ++ mode_str, "Run all tests in " ++ mode_str ++ ".");
-        test_step.dependOn(&tests.step);
+        test_step.dependOn(&run_test_step.step);
         test_all_step.dependOn(test_step);
     }
 
