@@ -106,14 +106,14 @@ pub fn SparseSet(comptime config: SparseSetConfig) type {
             // indices than dense...
             assert(capacity_dense < capacity_sparse);
 
-            var dense_to_sparse = try allocator.alloc(SparseT, capacity_dense);
+            const dense_to_sparse = try allocator.alloc(SparseT, capacity_dense);
             errdefer allocator.free(dense_to_sparse);
-            var sparse_to_dense = try allocator.alloc(DenseT, capacity_sparse);
+            const sparse_to_dense = try allocator.alloc(DenseT, capacity_sparse);
             errdefer allocator.free(sparse_to_dense);
 
             var self: Self = undefined;
             if (value_layout == .InternalArrayOfStructs) {
-                var values = try allocator.alloc(ValueT, capacity_dense);
+                const values = try allocator.alloc(ValueT, capacity_dense);
                 errdefer allocator.free(values);
 
                 self = Self{
@@ -458,8 +458,8 @@ test "docs" {
     var ss = DocsSparseSet.init(std.testing.allocator, 128, 8) catch unreachable;
     defer ss.deinit();
 
-    var ent1: Entity = 1;
-    var ent2: Entity = 2;
+    const ent1: Entity = 1;
+    const ent2: Entity = 2;
     _ = try ss.addOrError(ent1);
     _ = try ss.addValueOrError(ent2, 2);
     try std.testing.expectEqual(@as(DocsSparseSet.DenseCapacityT, 2), ss.len());
