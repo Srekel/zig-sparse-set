@@ -56,7 +56,7 @@ test "init safe" {
     try testing.expectEqual(@as(DefaultTestSparseSet.DenseCapacityT, @intCast(0)), ss.len());
     for (ss.sparse_to_dense, 0..) |dense_undefined, sparse| {
         _ = dense_undefined;
-        var usparse = @as(Entity, @intCast(sparse));
+        const usparse = @as(Entity, @intCast(sparse));
         try testing.expect(!(ss.hasSparse(usparse)));
     }
     try testing.expectEqual(@as(DefaultTestSparseSet.DenseCapacityT, @intCast(0)), ss.len());
@@ -69,8 +69,8 @@ test "add / remove safe 1" {
 
     for (ss.dense_to_sparse, 0..) |sparse_undefined, sparse| {
         _ = sparse_undefined;
-        var usparse = @as(Entity, @intCast(sparse)) + 10;
-        var dense_new = ss.add(usparse);
+        const usparse = @as(Entity, @intCast(sparse)) + 10;
+        const dense_new = ss.add(usparse);
         try testing.expectEqual(@as(DefaultTestSparseSet.DenseCapacityT, @intCast(sparse)), dense_new);
         try testing.expect(ss.hasSparse(usparse));
         try testing.expectEqual(dense_new, ss.getBySparse(usparse));
@@ -101,7 +101,7 @@ test "add / remove safe 3" {
 
     for (ss.dense_to_sparse, 0..) |sparse_undefined, sparse| {
         _ = sparse_undefined;
-        var usparse = @as(Entity, @intCast(sparse)) + 10;
+        const usparse = @as(Entity, @intCast(sparse)) + 10;
         _ = ss.add(usparse);
     }
 
@@ -122,9 +122,9 @@ test "AOS" {
 
     for (ss.dense_to_sparse, 0..) |sparse_undefined, sparse| {
         _ = sparse_undefined;
-        var usparse = @as(Entity, @intCast(sparse)) + 10;
-        var value = -@as(i32, @intCast(sparse));
-        var dense_new = ss.addValue(usparse, value);
+        const usparse = @as(Entity, @intCast(sparse)) + 10;
+        const value = -@as(i32, @intCast(sparse));
+        const dense_new = ss.addValue(usparse, value);
         try testing.expectEqual(@as(DenseT, @intCast(sparse)), dense_new);
         try testing.expect(ss.hasSparse(usparse));
         try testing.expectEqual(dense_new, ss.getBySparse(usparse));
@@ -142,10 +142,10 @@ test "AOS system" {
     var sys = MyPositionSystemAOS.init();
     defer sys.deinit();
 
-    var ent1: Entity = 10;
-    var ent2: Entity = 20;
-    var v1 = Vec3{ .x = 10, .y = 0, .z = 0 };
-    var v2 = Vec3{ .x = 20, .y = 0, .z = 0 };
+    const ent1: Entity = 10;
+    const ent2: Entity = 20;
+    const v1 = Vec3{ .x = 10, .y = 0, .z = 0 };
+    const v2 = Vec3{ .x = 20, .y = 0, .z = 0 };
     sys.addComp(ent1, v1);
     sys.addComp(ent2, v2);
     try testing.expectEqual(v1, sys.getComp(ent1));
@@ -168,10 +168,10 @@ test "SOA system" {
     var sys = MyPositionSystemSOA.init();
     defer sys.deinit();
 
-    var ent1: Entity = 10;
-    var ent2: Entity = 20;
-    var v1 = Vec3{ .x = 10, .y = 0, .z = 0 };
-    var v2 = Vec3{ .x = 20, .y = 0, .z = 0 };
+    const ent1: Entity = 10;
+    const ent2: Entity = 20;
+    const v1 = Vec3{ .x = 10, .y = 0, .z = 0 };
+    const v2 = Vec3{ .x = 20, .y = 0, .z = 0 };
     sys.addComp(ent1, v1);
     sys.addComp(ent2, v2);
     try testing.expectEqual(v1, sys.getComp(ent1));
@@ -195,7 +195,7 @@ test "SOA resize true" {
 
     for (ss.dense_to_sparse, 0..) |sparse_undefined, sparse| {
         _ = sparse_undefined;
-        var usparse = @as(Entity, @intCast(sparse)) + 10;
+        const usparse = @as(Entity, @intCast(sparse)) + 10;
         _ = ss.add(usparse);
         try testing.expect(ss.hasSparse(usparse));
     }
@@ -226,8 +226,8 @@ test "AOS resize true" {
 
     for (ss.dense_to_sparse, 0..) |sparse_undefined, sparse| {
         _ = sparse_undefined;
-        var usparse = @as(Entity, @intCast(sparse)) + 10;
-        var value = Vec3{ .x = @as(f32, @floatFromInt(sparse)), .y = 0, .z = 0 };
+        const usparse = @as(Entity, @intCast(sparse)) + 10;
+        const value = Vec3{ .x = @as(f32, @floatFromInt(sparse)), .y = 0, .z = 0 };
         _ = ss.addValue(usparse, value);
         try testing.expect(ss.hasSparse(usparse));
         try testing.expectEqual(value, ss.getValueBySparse(usparse).*);
@@ -303,7 +303,7 @@ const MyPositionSystemSOA = struct {
     }
 
     pub fn addComp(self: *Self, ent: Entity, pos: Vec3) void {
-        var dense = self.component_set.add(ent);
+        const dense = self.component_set.add(ent);
         self.xs[dense] = pos.x;
         self.ys[dense] = pos.y;
         self.zs[dense] = pos.z;
@@ -319,7 +319,7 @@ const MyPositionSystemSOA = struct {
     }
 
     pub fn getComp(self: *Self, ent: Entity) Vec3 {
-        var dense = self.component_set.getBySparse(ent);
+        const dense = self.component_set.getBySparse(ent);
         return Vec3{ .x = self.xs[dense], .y = self.ys[dense], .z = self.zs[dense] };
     }
 

@@ -1,8 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const Builder = std.build.Builder;
 
-pub fn build(b: *Builder) void {
+pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
 
     const test_all_step = b.step("test", "Run all tests in all modes.");
@@ -21,16 +20,18 @@ pub fn build(b: *Builder) void {
         test_all_step.dependOn(test_step);
     }
 
-    const build_docs = b.addSystemCommand(&[_][]const u8{
-        b.zig_exe,
-        "test",
-        "src/sparse_set.zig",
-        "-femit-docs",
-        "-fno-emit-bin",
+    const tests = b.addTest(.{
+        .root_source_file = .{ .path = "src/sparse_set.zig" },
+    });
+
+    const install_docs = b.addInstallDirectory(.{
+        .source_dir = tests.getEmittedDocs(),
+        .install_dir = .prefix,
+        .install_subdir = "docs",
     });
 
     const all_step = b.step("all", "Build everything and runs all tests");
-    all_step.dependOn(&build_docs.step);
+    all_step.dependOn(&install_docs.step);
     all_step.dependOn(test_all_step);
     b.default_step.dependOn(all_step);
 }
