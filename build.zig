@@ -9,7 +9,7 @@ pub fn build(b: *std.Build) void {
         const mode_str = @tagName(test_mode);
         const tests = b.addTest(.{
             .name = mode_str ++ " ",
-            .root_source_file = .{ .path = "src/test.zig" },
+            .root_source_file = b.path("src/test.zig"),
             .target = target,
             .optimize = test_mode,
         });
@@ -21,7 +21,7 @@ pub fn build(b: *std.Build) void {
     }
 
     const tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/sparse_set.zig" },
+        .root_source_file = b.path("src/sparse_set.zig"),
     });
 
     const install_docs = b.addInstallDirectory(.{
